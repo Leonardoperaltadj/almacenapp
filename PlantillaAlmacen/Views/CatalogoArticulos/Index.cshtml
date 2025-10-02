@@ -1,0 +1,450 @@
+﻿@model Paginacion<PlantillaAlmacen.Models.CatalogoArticulo>
+
+@{
+    ViewData["Title"] = "Productos";
+    Layout = "_Layout";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Listado de productos</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#crearProductosModal">
+                    <i class="fas fa-plus"></i> Nueva producto
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary">
+            <div class="card-body">
+                <form asp-action="Index" method="get" class="form-inline mb-3">
+                    <div class="input-group w-50">
+                        <input type="text" name="buscador" value="@ViewData["Buscador"]"
+                               class="form-control" placeholder="Buscar por nombre o categoría...">
+                        <span class="input-group-append">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-list"></i> Ver todo
+                            </a>
+                        </span>
+                    </div>
+                </form>
+                <div class="table-responsive">
+                    <table class="table table-hover text-nowrap">
+                        <thead class="bg-dark">
+                            <tr>
+                                <th>Categoria</th>
+                                <th>
+                                    <a asp-action="Index"
+                                       asp-route-ordenacion="@ViewData["OrdenacionNombres"]"
+                                       asp-route-buscador="@ViewData["Buscador"]"
+                                       class="text-white">
+                                        Nombre <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th>Descripción</th>
+                                <th>Estatus</th>
+                                <th style="width:150px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.Categoria.Nombre</td>
+                                    <td>@item.Nombre</td>
+                                    <td>@item.Descripcion</td>
+                                    <td>
+                                        @if (item.Estatus)
+                                        {
+                                            <span class="badge badge-success">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-danger">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" onclick="abrirEditarModal(@item.IdCatalogoArticulo)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-info" onclick="abrirDetallesProducto(@item.IdCatalogoArticulo)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm"
+                                                onclick="abrirEstatusProducto(@item.IdCatalogoArticulo)">
+                                            <i class="fas @(item.Estatus ? "fa-ban text-danger" : "fa-check text-success")"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    @{
+                        var previoDeshabilitado = !Model.TienePaginaAnterior ? "disabled" : "";
+                        var siguienteDeshabilitado = !Model.TienePaginaSiguiente ? "disabled" : "";
+                    }
+
+                    <div class="btn-group" role="group">
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina - 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           class="btn btn-secondary @previoDeshabilitado">
+                            <i class="fas fa-chevron-left"></i> Previo
+                        </a>
+
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina + 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           class="btn btn-secondary @siguienteDeshabilitado">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="text-muted">
+                        Página <strong>@Model.IndicePagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="crearProductosModal" tabindex="-1" role="dialog" aria-labelledby="crearCategoriaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="crearCategoriaLabel">Nueva Producto</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form asp-action="Create" id="formCrearProducto" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="form-group">
+                        <label for="IdCategoria" class="control-label">Categoria</label>
+                        <select name="IdCategoria" id="IdCategoria" asp-items="ViewBag.Categorias" class="form-control">
+                            <option value="">-- Seleccione una categoría --</option>
+                        </select>
+                        <span class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="Nombre" class="control-label">Nombre</label>
+                        <input type="text" name="Nombre" id="Nombre" class="form-control" placeholder="Ingrese el nombre del producto" />
+                        <span class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="Descripcion" class="control-label">Descripción</label>
+                        <textarea name="Descripcion" id="Descripcion" class="form-control" placeholder="Ingrese una descripción"></textarea>
+                        <span class="text-danger"></span>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="IdUnidadMedida" class="control-label">Unidad de medida</label>
+                        <select name="IdUnidadMedida" id="IdUnidadMedida" asp-items="ViewBag.UnidadesMedida" class="form-control">
+                            <option value="">-- Seleccione una unidad --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editarProductosModal" tabindex="-1" role="dialog" aria-labelledby="editarProductoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editarProductoLabel">Editar Producto</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarProducto" method="post">
+                    <input type="hidden" name="id" id="edit_IdCatalogoArticulo" />
+
+                    <div class="form-group">
+                        <label for="edit_IdCategoria" class="control-label">Categoría</label>
+                        <select name="IdCategoria" id="edit_IdCategoria" class="form-control">
+                            <option value="">-- Seleccione una categoría --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="edit_Nombre">Nombre</label>
+                        <input type="text" name="Nombre" id="edit_Nombre" class="form-control" />
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="edit_Descripcion">Descripción</label>
+                        <textarea name="Descripcion" id="edit_Descripcion" class="form-control"></textarea>
+                    </div>
+                    <div class="form-group mt-3">
+                        <label for="edit_IdUnidadMedida" class="control-label">Unidad de medida</label>
+                        <select name="IdUnidadMedida" id="edit_IdUnidadMedida" class="form-control">
+                            <option value="">-- Seleccione una unidad --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> Guardar cambios
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detallesProductoModal" tabindex="-1" role="dialog" aria-labelledby="detallesProductoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="detallesProductoLabel">Detalles del Producto</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Categoría</dt>
+                    <dd class="col-sm-9" id="detProdCategoria"></dd>
+
+                    <dt class="col-sm-3">Nombre</dt>
+                    <dd class="col-sm-9" id="detProdNombre"></dd>
+
+                    <dt class="col-sm-3">Descripción</dt>
+                    <dd class="col-sm-9" id="detProdDescripcion"></dd>
+
+                    <dt class="col-sm-3">Estatus</dt>
+                    <dd class="col-sm-9" id="detProdEstatus"></dd>
+
+                    <dt class="col-sm-3">Unidad de medida</dt>
+                    <dd class="col-sm-9" id="detProdUnidad"></dd>
+
+                </dl>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="estatusProductoModal" tabindex="-1" role="dialog" aria-labelledby="estatusProductoLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="estatusProductoLabel">Cambiar Estatus del Producto</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <p id="estatusProductoMensaje"></p>
+                <dl class="row">
+                    <dt class="col-sm-3">Categoría</dt>
+                    <dd class="col-sm-9" id="prodCat"></dd>
+
+                    <dt class="col-sm-3">Nombre</dt>
+                    <dd class="col-sm-9" id="prodNombre"></dd>
+
+                    <dt class="col-sm-3">Estatus</dt>
+                    <dd class="col-sm-9" id="prodEstatus"></dd>
+                </dl>
+                <input type="hidden" id="prodIdHidden" />
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn" id="btnCambiarEstatusProducto">
+                    <i class="fas" id="iconEstatusProducto"></i> <span id="textoEstatusProducto"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+         $(document).ready(function () {
+             $('#formCrearProducto').submit(function (e) {
+                 e.preventDefault();
+                 var form = $(this);
+                 $.ajax({
+                     type: form.attr('method'),
+                     url: form.attr('action'),
+                     data: form.serialize(),
+                     success: function (response) {
+                         $('#crearProductosModal').modal('hide');
+                         location.reload();
+                     },
+                     error: function () {
+                         alert("Error al crear la categoría");
+                     }
+                 });
+             });
+         });
+
+                        function abrirEditarModal(id) {
+            $.ajax({
+                url: '/CatalogoArticulos/Edit/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#edit_IdCatalogoArticulo').val(data.idCatalogoArticulo);
+                    $('#edit_Nombre').val(data.nombre);
+                    $('#edit_Descripcion').val(data.descripcion);
+
+                    $('#edit_IdCategoria').empty();
+                    $('#edit_IdCategoria').append('<option value="">-- Seleccione una categoría --</option>');
+                    $.each(data.categorias, function (i, cat) {
+                        let selected = (cat.idCategoria === data.idCategoria) ? 'selected' : '';
+                        $('#edit_IdCategoria').append('<option value="' + cat.idCategoria + '" ' + selected + '>' + cat.nombre + '</option>');
+                    });
+
+                    $('#edit_IdUnidadMedida').empty();
+                    $('#edit_IdUnidadMedida').append('<option value="">-- Seleccione una unidad --</option>');
+                    $.each(data.unidades, function (i, um) {
+                        let selected = (um.idUnidadMedida === data.idUnidadMedida) ? 'selected' : '';
+                        $('#edit_IdUnidadMedida').append('<option value="' + um.idUnidadMedida + '" ' + selected + '>' + um.nombre + '</option>');
+                    });
+
+                    $('#editarProductosModal').modal('show');
+                },
+                error: function () {
+                    alert("No se pudieron cargar los datos del producto.");
+                }
+            });
+        }
+
+        $('#formEditarProducto').submit(function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                url: '/CatalogoArticulos/EditPost/' + $('#edit_IdCatalogoArticulo').val(),
+                type: 'POST',
+                data: $(this).serialize(),
+                success: function () {
+                    $('#editarProductosModal').modal('hide');
+                    location.reload();
+                },
+                error: function () {
+                    alert("No se pudo actualizar el producto.");
+                }
+            });
+        });
+                function abrirDetallesProducto(id) {
+            $.ajax({
+                url: '/CatalogoArticulos/DetailsJson/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#detProdCategoria').text(data.categoria || '(Sin categoría)');
+                    $('#detProdNombre').text(data.nombre || '');
+                    $('#detProdDescripcion').text(data.descripcion || '');
+                    $('#detProdUnidad').text(data.unidadMedida || '');
+
+                    $('#detProdEstatus').html(data.estatus
+                        ? '<span class="badge badge-success">Activo</span>'
+                        : '<span class="badge badge-danger">Inactivo</span>'
+                    );
+
+                    $('#detallesProductoModal').modal('show');
+                },
+                error: function () {
+                    alert('No se pudieron cargar los detalles del producto.');
+                }
+            });
+        }
+        function abrirEstatusProducto(id) {
+            $.ajax({
+                url: '/CatalogoArticulos/DetailsJson/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#prodIdHidden').val(data.idCatalogoArticulo);
+                    $('#prodCat').text(data.categoria || '(Sin categoría)');
+                    $('#prodNombre').text(data.nombre || '');
+
+                    if (data.estatus) {
+                        $('#prodEstatus').html('<span class="badge badge-success">Activo</span>');
+                        $('#btnCambiarEstatusProducto').removeClass('btn-success').addClass('btn-danger');
+                        $('#iconEstatusProducto').removeClass('fa-check').addClass('fa-ban');
+                        $('#textoEstatusProducto').text('Desactivar');
+                        $('#estatusProductoMensaje').text('¿Desea desactivar este producto?');
+                    } else {
+                        $('#prodEstatus').html('<span class="badge badge-danger">Inactivo</span>');
+                        $('#btnCambiarEstatusProducto').removeClass('btn-danger').addClass('btn-success');
+                        $('#iconEstatusProducto').removeClass('fa-ban').addClass('fa-check');
+                        $('#textoEstatusProducto').text('Activar');
+                        $('#estatusProductoMensaje').text('¿Desea activar este producto?');
+                    }
+
+                    $('#estatusProductoModal').modal('show');
+                },
+                error: function () {
+                    alert('No se pudieron cargar los detalles del producto.');
+                }
+            });
+        }
+
+        $('#btnCambiarEstatusProducto').click(function () {
+            var id = $('#prodIdHidden').val();
+            var token = $('input[name="__RequestVerificationToken"]').val();
+
+            $.ajax({
+                url: '/CatalogoArticulos/CambiarEstatus/' + id,
+                type: 'POST',
+                data: { __RequestVerificationToken: token },
+                success: function () {
+                    $('#estatusProductoModal').modal('hide');
+                    location.reload();
+                },
+                error: function () {
+                    alert('Error al actualizar el estatus del producto.');
+                }
+            });
+        });
+
+    </script>
+}

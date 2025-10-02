@@ -1,0 +1,51 @@
+﻿@model PlantillaAlmacen.Models.Auth.LoginVM
+@{
+    Layout = "_LayoutLogin";
+    ViewData["Title"] = "Iniciar sesión";
+}
+<div class="login-box">
+    <div class="login-logo">
+        <b>Sistema de inventarios</b>
+    </div>
+    <div class="card">
+        <div class="card-body login-card-body">
+            <p class="login-box-msg">Inicia sesión para continuar</p>
+
+            <form asp-action="Login" method="post" id="formLogin" novalidate>
+                @Html.AntiForgeryToken()
+                <div asp-validation-summary="ModelOnly" class="text-danger mb-2"></div>
+
+                <div class="input-group mb-3">
+                    <input asp-for="Email" class="form-control" placeholder="Email" />
+                    <div class="input-group-append">
+                        <div class="input-group-text"><span class="fas fa-envelope"></span></div>
+                    </div>
+                </div>
+                <span asp-validation-for="Email" class="text-danger"></span>
+
+                <div class="input-group mb-3">
+                    <input asp-for="Password" type="password" class="form-control" placeholder="Contraseña" />
+                    <div class="input-group-append">
+                        <div class="input-group-text"><span class="fas fa-lock"></span></div>
+                    </div>
+                </div>
+                <span asp-validation-for="Password" class="text-danger"></span>
+                <div class="row">
+                    @* <div class="col-8">
+                        <div class="icheck-primary">
+                            <input asp-for="Recordarme" type="checkbox" id="remember" />
+                            <label for="remember">Recordarme</label>
+                        </div>
+                    </div> *@
+                    <div class="col-4">
+                        <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

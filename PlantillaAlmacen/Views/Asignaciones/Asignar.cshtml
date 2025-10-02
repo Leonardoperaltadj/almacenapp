@@ -1,0 +1,478 @@
+﻿@model Paginacion<PlantillaAlmacen.Models.Asignacion>
+@{
+    ViewData["Title"] = "Asignar";
+    Layout = "_Layout";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Asignaciones</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#asignarModal">
+                    <i class="fas fa-plus"></i> Nueva asignación
+                </button>
+
+                <button type="button" class="btn btn-success" data-toggle="modal" data-target="#importarAsignacionesModal">
+                    <i class="fas fa-file-excel"></i> Asignar por Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary">
+            <div class="card-body">
+
+                <form asp-action="Asignar" method="get" class="form-inline mb-3">
+                    <div class="input-group w-50">
+                        <input type="text" name="buscador" value="@ViewData["Buscador"]"
+                               class="form-control" placeholder="Buscar por artículo, serie, personal, depto o frente...">
+                        <span class="input-group-append">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a asp-action="Asignar" class="btn btn-outline-secondary">
+                                <i class="fas fa-list"></i> Ver todo
+                            </a>
+                        </span>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover text-nowrap">
+                        <thead class="bg-dark">
+                            <tr>
+                                <th>Artículo</th>
+                                <th>Destino</th>
+                                <th>Estado entrega</th>
+                                <th>
+                                    <a asp-action="Asignar"
+                                       asp-route-ordenacion="@ViewData["OrdenacionFecha"]"
+                                       asp-route-buscador="@ViewData["Buscador"]"
+                                       asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                                       class="text-white">
+                                        Fecha asignación <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th style="width:100px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var a in Model)
+                            {
+                                var art = a.Articulo;
+                                var prod = art?.CatalogoArticulo?.Nombre ?? "";
+                                var destino = a.Personal?.Nombre
+                                ?? a.Departamento?.Nombre
+                                ?? a.Frente?.Nombre
+                                ?? "—";
+                                <tr>
+                                    <td>
+                                        <div>@prod</div>
+                                    </td>
+                                    <td>@destino</td>
+                                    <td>@a.EstadoEntrega?.Nombre</td>
+                                    <td>@a.FechaAsignacion.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        @if (!string.IsNullOrEmpty(a.ArchivoAsignacion))
+                                        {
+                                            <button type="button" class="btn btn-sm btn-info" title="Ver archivo"
+                                                    onclick="verAsignacion(@a.IdAsignacion)">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        }
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    @{
+                        var previoDeshabilitado = !Model.TienePaginaAnterior ? "disabled" : "";
+                        var siguienteDeshabilitado = !Model.TienePaginaSiguiente ? "disabled" : "";
+                    }
+                    <div class="btn-group" role="group">
+                        <a asp-action="Asignar"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina - 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                           class="btn btn-secondary @previoDeshabilitado">
+                            <i class="fas fa-chevron-left"></i> Previo
+                        </a>
+
+                        <a asp-action="Asignar"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina + 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                           class="btn btn-secondary @siguienteDeshabilitado">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="text-muted">
+                        Página <strong>@Model.IndicePagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+<div class="modal fade" id="asignarModal" tabindex="-1" role="dialog" aria-labelledby="asignarLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="asignarLabel">Nueva asignación</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formAsignar" method="post" asp-action="Crear">
+                    @Html.AntiForgeryToken()
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="asig_IdCategoria">Categoría</label>
+                            <select id="asig_IdCategoria" name="IdCategoria" class="form-control" asp-items="ViewBag.Categorias">
+                                <option value="">-- Seleccione categoría --</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="asig_IdCatalogoArticulo">Catálogo</label>
+                            <select id="asig_IdCatalogoArticulo" name="IdCatalogoArticulo" class="form-control">
+                                <option value="">-- Seleccione catálogo --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="asig_IdArticulo">Artículo</label>
+                        <select id="asig_IdArticulo" name="IdArticulo" class="form-control">
+                            <option value="">-- Seleccione artículo --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Destino</label>
+                        <div class="d-flex flex-wrap">
+                            <div class="form-check mr-4">
+                                <input class="form-check-input" type="radio" name="destinoTipo" id="destPersonal" value="personal" checked>
+                                <label class="form-check-label" for="destPersonal">Personal</label>
+                            </div>
+                            <div class="form-check mr-4">
+                                <input class="form-check-input" type="radio" name="destinoTipo" id="destDepto" value="departamento">
+                                <label class="form-check-label" for="destDepto">Departamento</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="destinoTipo" id="destFrente" value="frente">
+                                <label class="form-check-label" for="destFrente">Frente</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6" id="wrap_Personal">
+                            <label for="asig_IdPersonal">Personal</label>
+                            <select id="asig_IdPersonal" name="IdPersonal" class="form-control" asp-items="ViewBag.Personales">
+                                <option value="">-- Seleccione personal --</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6 d-none" id="wrap_Departamento">
+                            <label for="asig_IdDepartamento">Departamento</label>
+                            <select id="asig_IdDepartamento" name="IdDepartamento" class="form-control" asp-items="ViewBag.Departamentos">
+                                <option value="">-- Seleccione departamento --</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group col-md-6 d-none" id="wrap_Frente">
+                            <label for="asig_IdFrente">Frente</label>
+                            <select id="asig_IdFrente" name="IdFrente" class="form-control" asp-items="ViewBag.Frentes">
+                                <option value="">-- Seleccione frente --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group ">
+                        <label for="asig_IdEstadoEntrega">Estado de entrega</label>
+                        <select id="asig_IdEstadoEntrega" name="IdEstadoEntrega" class="form-control" asp-items="ViewBag.EstadosEntrega">
+                            <option value="">-- Seleccione estado --</option>
+                        </select>
+                    </div>
+                    <div class="form-group text-end mt-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="importarAsignacionesModal" tabindex="-1" role="dialog" aria-labelledby="importarAsignacionesLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="importarAsignacionesLabel">Importar asignaciones por Excel</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formImportarAsignaciones" enctype="multipart/form-data" method="post" asp-action="ImportarAsignaciones">
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-group">
+                        <label for="ArchivoExcel">Archivo Excel</label>
+                        <input type="file" id="ArchivoExcel" name="ArchivoExcel" class="form-control" accept=".xlsx,.xls" required />
+                        <small class="form-text text-muted">Seleccione el archivo con las asignaciones.</small>
+                    </div>
+
+                    <div class="form-group text-right">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload"></i> Importar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="erroresAsignacionesModal" tabindex="-1" role="dialog" aria-labelledby="erroresAsignacionesLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="erroresAsignacionesLabel">Errores en importación de asignaciones</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+
+                <div class="alert alert-warning">
+                    <strong id="contadorErroresAsignaciones"></strong>
+                </div>
+
+                <table class="table table-bordered table-striped">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th scope="col">Fila</th>
+                            <th scope="col">Detalle del error</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaErroresAsignaciones">
+                    </tbody>
+                </table>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="modal fade" id="verAsignacionModal" tabindex="-1" role="dialog" aria-labelledby="verAsignacionLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="verAsignacionLabel">Archivo de Asignación</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <iframe id="iframeAsignacion" src="" style="width:100%;height:600px;" frameborder="0"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let categoriaSeleccionada = "";
+
+        function toggleDestino() {
+            const tipo = $('input[name="destinoTipo"]:checked').val();
+            $('#wrap_Personal').toggleClass('d-none', tipo !== 'personal');
+            $('#wrap_Departamento').toggleClass('d-none', tipo !== 'departamento');
+            $('#wrap_Frente').toggleClass('d-none', tipo !== 'frente');
+
+            if (tipo !== 'personal') $('#asig_IdPersonal').val('');
+            if (tipo !== 'departamento') $('#asig_IdDepartamento').val('');
+            if (tipo !== 'frente') $('#asig_IdFrente').val('');
+        }
+        $(document).on('change', 'input[name="destinoTipo"]', toggleDestino);
+
+        $('#asig_IdCategoria').on('change', function () {
+            categoriaSeleccionada = $("#asig_IdCategoria option:selected").text().toUpperCase();
+
+            if (categoriaSeleccionada === "VEHÍCULOS" || categoriaSeleccionada === "VEHICULOS") {
+                $('#destDepto').prop('disabled', true);
+                $('#destFrente').prop('disabled', true);
+                $('#destPersonal').prop('checked', true).prop('disabled', false);
+                toggleDestino();
+            } else {
+                $('#destDepto, #destFrente, #destPersonal').prop('disabled', false);
+            }
+
+            var idCat = $(this).val();
+            var $catalogo = $('#asig_IdCatalogoArticulo');
+            var $art = $('#asig_IdArticulo');
+            $catalogo.empty().append('<option value="">-- Seleccione catálogo --</option>');
+            $art.empty().append('<option value="">-- Seleccione artículo --</option>');
+
+            if (idCat) {
+                $.get('/Asignaciones/GetCatalogosPorCategoria', { idCategoria: idCat }, function (data) {
+                    $.each(data, function (i, item) {
+                        $catalogo.append('<option value="' + item.idCatalogoArticulo + '">' + item.nombre + '</option>');
+                    });
+                });
+            }
+        });
+
+        $('#asig_IdCatalogoArticulo').on('change', function () {
+            var idCatArt = $(this).val();
+            var $art = $('#asig_IdArticulo');
+            $art.empty().append('<option value="">-- Seleccione artículo --</option>');
+
+            if (idCatArt) {
+                $.get('/Asignaciones/GetArticulosPorCatalogo', { idCatalogo: idCatArt }, function (data) {
+                    $.each(data, function (i, item) {
+                        $art.append('<option value="' + item.idArticulo + '">' + item.texto + '</option>');
+                    });
+                });
+            }
+        });
+
+        $('#asig_IdPersonal').on('change', function () {
+            var idPer = $(this).val();
+            if (!idPer) return;
+
+            if (categoriaSeleccionada === "VEHÍCULOS" || categoriaSeleccionada === "VEHICULOS") {
+                $.get('/Personales/GetLicencia/' + idPer, function (data) {
+                    if (!data.tieneLicencia) {
+                        alert("⚠️ El personal seleccionado no tiene licencia de conducir.");
+                    } else if (data.vigencia) {
+                        var hoy = new Date();
+                        var vig = new Date(data.vigencia);
+                        if (vig < hoy) {
+                            alert("⚠️ La licencia del personal está vencida (" + data.vigencia + ").");
+                        }
+                    }
+                });
+            }
+        });
+
+        $('#formAsignar').on('submit', function (e) {
+          e.preventDefault();
+          const token = $('input[name="__RequestVerificationToken"]', this).val();
+
+          $.ajax({
+            url: '@Url.Action("Crear", "Asignaciones")',
+            type: 'POST',
+            data: {
+              __RequestVerificationToken: token,
+              IdArticulo: $('#asig_IdArticulo').val(),
+              IdEstadoEntrega: $('#asig_IdEstadoEntrega').val(),
+              IdPersonal: $('#asig_IdPersonal').val(),
+              IdDepartamento: $('#asig_IdDepartamento').val(),
+              IdFrente: $('#asig_IdFrente').val(),
+              Observacion: $('#asig_Observacion').val()
+            },
+            success: function (resp) {
+              $('#asignarModal').modal('hide');
+
+              window.open('/Asignaciones/DescargarActa?idAsignacion=' + resp.idAsignacion, '_blank');
+
+              setTimeout(() => location.reload(), 1000);
+            },
+            error: function (xhr) {
+              alert(xhr.responseText || "No se pudo completar la asignación.");
+            }
+          });
+        });
+
+        $('#asignarModal').on('show.bs.modal', function () {
+            $('#asig_IdCategoria').val('');
+            $('#asig_IdCatalogoArticulo').empty().append('<option value="">-- Seleccione catálogo --</option>');
+            $('#asig_IdArticulo').empty().append('<option value="">-- Seleccione artículo --</option>');
+            $('#asig_IdEstadoEntrega').val('');
+            $('#asig_IdPersonal').val('');
+            $('#asig_IdDepartamento').val('');
+            $('#asig_IdFrente').val('');
+            $('#destPersonal').prop('checked', true);
+            toggleDestino();
+        });
+
+        $('#formImportarAsignaciones').on('submit', function (e) {
+            e.preventDefault();
+
+            var form = $(this)[0];
+            var formData = new FormData(form);
+
+            $("#loadingOverlay").fadeIn();
+
+            $.ajax({
+                url: form.action,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (resp) {
+                    $("#loadingOverlay").fadeOut();
+
+                    $('#importarAsignacionesModal').modal('hide');
+
+                    if (resp.ok) {
+                        alert(resp.mensaje);
+                        location.reload();
+                    } else {
+                        let tbody = $("#tablaErroresAsignaciones");
+                        tbody.empty();
+
+                        resp.errores.forEach(e => {
+                            tbody.append(`
+                                <tr>
+                                    <td>${e.fila}</td>
+                                    <td>${e.nombre}</td>
+                                </tr>
+                            `);
+                        });
+
+                        $("#contadorErroresAsignaciones").text(`Se encontraron ${resp.errores.length} errores en la importación.`);
+
+                        $("#erroresAsignacionesModal").modal("show");
+                    }
+                },
+                error: function (xhr) {
+                    $("#loadingOverlay").fadeOut();
+
+                    alert(xhr.responseText || "Error al importar asignaciones.");
+                }
+            });
+        });
+
+                function verAsignacion(idAsignacion) {
+            $.get('/Asignaciones/VerAsignacion?idAsignacion=' + idAsignacion, function (resp) {
+                $('#iframeAsignacion').attr('src', resp.url);
+                $('#verAsignacionModal').modal('show');
+            });
+        }
+
+
+    </script>
+}

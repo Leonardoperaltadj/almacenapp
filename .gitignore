@@ -1,0 +1,17 @@
+# Archivos de Visual Studio
+.vs/
+*.vsidx
+
+# Archivos de usuario y configuración local
+*.user
+*.suo
+
+# Binarios y builds
+bin/
+obj/
+Debug/
+Release/
+
+# Archivos de sistema
+*.log
+*.tmp

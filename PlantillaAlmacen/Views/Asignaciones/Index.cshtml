@@ -1,0 +1,58 @@
+﻿@model IEnumerable<PlantillaAlmacen.Models.Asignacion>
+
+@{
+    ViewData["Title"] = "Index";
+}
+
+<h1>Index</h1>
+
+<p>
+    <a asp-action="Create">Create New</a>
+</p>
+<table class="table">
+    <thead>
+        <tr>
+            <th>
+                @Html.DisplayNameFor(model => model.IdArticulo)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IdPersonal)
+            </th>
+            <th>
+                @Html.DisplayNameFor(model => model.IdEstadoEntrega)
+            </th>
+
+            <th>
+                @Html.DisplayNameFor(model => model.FechaAsignacion)
+            </th>
+
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IdArticulo)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IdPersonal)
+                </td>
+                <td>
+                    @Html.DisplayFor(modelItem => item.IdEstadoEntrega)
+                </td>
+
+                <td>
+                    @Html.DisplayFor(modelItem => item.FechaAsignacion)
+                </td>
+
+                <td>
+                    <a asp-action="Edit" asp-route-id="@item.IdAsignacion">Edit</a> |
+                    <a asp-action="Details" asp-route-id="@item.IdAsignacion">Details</a> |
+                    <a asp-action="Delete" asp-route-id="@item.IdAsignacion">Delete</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -1,0 +1,101 @@
+﻿@model Paginacion<PlantillaAlmacen.Models.ArticuloTecnologia>
+
+@{
+    ViewData["Title"] = "Consulta de Tecnología";
+    Layout = "_Layout";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <h1 class="m-0">Consulta de Tecnología</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-primary">
+            <div class="card-body">
+
+                <form asp-action="ConsultaTecnologia" method="get" class="form-inline mb-3">
+                    <input type="text" name="buscador" value="@ViewData["Buscador"]"
+                           class="form-control mr-2 w-50"
+                           placeholder="Buscar por marca, modelo, serie, etc...">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+                    <a asp-action="ConsultaTecnologia" class="btn btn-outline-secondary ml-2">
+                        <i class="fas fa-list"></i> Ver todo
+                    </a>
+                    <a asp-action="ExportarTecnologia" class="btn btn-success ml-2">
+                        <i class="fas fa-file-excel"></i> Exportar Excel
+                    </a>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-striped table-bordered text-nowrap table-wrap">
+                        <thead class="bg-dark text-white">
+                            <tr>
+                                <th>N° Inventario</th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
+                                <th>N° Serie</th>
+                                <th class="wrap-col">Características</th>
+                                <th>Precio</th>
+                                <th>Fecha Compra</th>
+                                <th>Estatus</th>
+                                <th>Asignado a</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var t in Model)
+                            {
+                                var asignado = t.Asignaciones.FirstOrDefault(a => a.FechaDevolucion == null)?.Personal?.Nombre ?? "—";
+                                <tr>
+                                    <td>@t.NumeroInventario</td>
+                                    <td>@t.Marca</td>
+                                    <td>@t.Modelo</td>
+                                    <td>@t.NumeroSerie</td>
+                                    <td class="wrap-col">@t.Caracteristicas</td>
+                                    <td>@t.Precio.ToString("C")</td>
+                                    <td>@t.FechaCompra.ToString("dd/MM/yyyy")</td>
+                                    <td><span class="badge badge-info">@t.EstatusArticulo?.Nombre</span></td>
+                                    <td>@asignado</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    @{
+                        var previoDeshabilitado = !Model.TienePaginaAnterior ? "disabled" : "";
+                        var siguienteDeshabilitado = !Model.TienePaginaSiguiente ? "disabled" : "";
+                    }
+
+                    <div class="btn-group" role="group">
+                        <a asp-action="ConsultaTecnologia"
+                           asp-route-numeroPagina="@(Model.IndicePagina - 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                           class="btn btn-secondary @previoDeshabilitado">
+                            <i class="fas fa-chevron-left"></i> Previo
+                        </a>
+
+                        <a asp-action="ConsultaTecnologia"
+                           asp-route-numeroPagina="@(Model.IndicePagina + 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                           class="btn btn-secondary @siguienteDeshabilitado">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="text-muted">
+                        Página <strong>@Model.IndicePagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>

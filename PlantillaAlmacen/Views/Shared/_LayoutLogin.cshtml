@@ -1,0 +1,36 @@
+﻿@{
+    Layout = null;
+    var title = ViewData["Title"] as string ?? "Acceso";
+}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Sistema de inventarios</title>
+
+    <!-- Font Awesome (local) -->
+    <link rel="stylesheet" href="~/adminlte/plugins/fontawesome-free/css/all.min.css" />
+
+    <!-- iCheck (para el checkbox de 'Recordarme', estilo AdminLTE) -->
+    <link rel="stylesheet" href="~/adminlte/plugins/icheck-bootstrap/icheck-bootstrap.min.css" />
+
+    <!-- Tema AdminLTE -->
+    <link rel="stylesheet" href="~/adminlte/dist/css/adminlte.min.css" />
+
+    <!-- Google Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,400i,700">
+
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="hold-transition login-page">
+    @RenderBody()
+
+    <script src="~/adminlte/plugins/jquery/jquery.min.js"></script>
+    <script src="~/adminlte/plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/adminlte/dist/js/adminlte.min.js"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

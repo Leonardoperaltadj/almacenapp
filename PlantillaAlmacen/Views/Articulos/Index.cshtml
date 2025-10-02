@@ -1,0 +1,1386 @@
+﻿@model Paginacion<PlantillaAlmacen.Models.Articulo>
+
+@{
+    ViewData["Title"] = "Artículos";
+    Layout = "_Layout";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Listado de artículos</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#crearArticuloModal">
+                    <i class="fas fa-plus"></i> Nuevo artículo
+                </button>
+                <button type="button" class="btn btn-success ml-2" data-toggle="modal" data-target="#importarExcelModal">
+                    <i class="fas fa-file-excel"></i> Agregar por Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary">
+            <div class="card-body">
+
+                <form asp-action="Index" method="get" class="form-inline mb-3">
+                    <div class="input-group w-50">
+                        <input type="text" name="buscador" value="@ViewData["Buscador"]"
+                               class="form-control" placeholder="Buscar por marca, modelo, serie, producto o categoría...">
+                        <span class="input-group-append">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-list"></i> Ver todo
+                            </a>
+                        </span>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover text-nowrap">
+                        <thead class="bg-dark">
+                            <tr>
+                                <th>N° Inventario</th>
+                                <th>Categoría</th>
+                                <th>Producto</th>
+                                <th>Almacén</th>
+                                <th>Estatus</th>
+                                <th>Fecha alta</th>
+                                <th style="width:150px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.NumeroInventario</td>
+                                    <td>@item.CatalogoArticulo?.Categoria?.Nombre</td>
+                                    <td>@item.CatalogoArticulo?.Nombre</td>
+                                    <td>@item.Almacen?.Nombre</td>
+                                    <td>
+                                        @{
+                                            var nombreEstatus = item.EstatusArticulo?.Nombre?.Trim() ?? "";
+                                            var clave = nombreEstatus.ToUpperInvariant();
+
+                                            string badgeClass = clave switch
+                                            {
+                                                "ACTIVO" => "success",
+                                                "ASIGNADO" => "primary",
+                                                "PRESTADO" => "info",
+                                                "EN REPARACIÓN" => "warning",
+                                                "EN REPARACION" => "warning",
+                                                "DESCOMPUESTO" => "danger",
+                                                "PERDIDO" => "danger",
+                                                "BAJA" => "dark",
+                                                _ => "secondary"
+                                            };
+                                        }
+
+                                        @if (item.EstatusArticulo != null)
+                                        {
+                                            <span class="badge badge-@badgeClass">@nombreEstatus</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">—</span>
+                                        }
+                                    </td>
+
+
+                                    <td>@item.FechaAlta.ToString("dd/MM/yyyy")</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" onclick="abrirEditarArticulo(@item.IdArticulo)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-info" onclick="abrirDetallesArticulo(@item.IdArticulo)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    @{
+                        var previoDeshabilitado = !Model.TienePaginaAnterior ? "disabled" : "";
+                        var siguienteDeshabilitado = !Model.TienePaginaSiguiente ? "disabled" : "";
+                    }
+
+                    <div class="btn-group" role="group">
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina - 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                           class="btn btn-secondary @previoDeshabilitado">
+                            <i class="fas fa-chevron-left"></i> Previo
+                        </a>
+
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina + 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                           class="btn btn-secondary @siguienteDeshabilitado">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="text-muted">
+                        Página <strong>@Model.IndicePagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="crearArticuloModal" tabindex="-1" role="dialog" aria-labelledby="crearArticuloLabel" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-lg modal-dialog-scrollable" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="crearArticuloLabel">Nuevo Artículo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formCrearArticulo" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <input type="hidden" name="IdEstatusArticulo" value="2" />
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="IdCategoria" class="control-label">Categoría</label>
+                            <select id="IdCategoria" name="IdCategoria" asp-items="ViewBag.Categorias" class="form-control">
+                                <option value="">-- Seleccione una categoría --</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="IdCatalogoArticulo" class="control-label">Producto</label>
+                            <select name="IdCatalogoArticulo" id="IdCatalogoArticulo" class="form-control">
+                                <option value="">-- Seleccione un producto --</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="camposDinamicos"></div>
+
+                    <div class="form-row mt-3">
+                        <div class="form-group col-md-4">
+                            <label for="Precio" class="control-label">Precio</label>
+                            <input type="number" step="0.01" name="Precio" id="Precio" class="form-control" placeholder="Precio del artículo" />
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label for="FechaCompra" class="control-label">Fecha de compra</label>
+                            <input type="date" name="FechaCompra" id="FechaCompra" class="form-control" />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="IdFactura">Factura</label>
+                            <select id="IdFactura" name="IdFactura" class="form-control">
+                                <option value="">-- Seleccione una factura --</option>
+                            </select>
+                            <small class="form-text text-muted">
+                                ¿No está registrada? <a href="#" data-toggle="modal" data-target="#crearFacturaModal">Subir nueva factura</a>
+                            </small>
+                        </div>
+
+                    </div>
+
+                    <div class="form-group">
+                        <label for="Observacion" class="control-label">Observación</label>
+                        <textarea name="Observacion" id="Observacion" class="form-control" placeholder="Observaciones"></textarea>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="crearFacturaModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="formCrearFactura" enctype="multipart/form-data" method="post">
+                <div class="modal-header bg-dark text-white">
+                    <h5>Nueva Factura</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Número de Factura</label>
+                        <input type="text" name="NumeroFactura" class="form-control" required />
+                    </div>
+                    <div class="form-group">
+                        <label>Archivo</label>
+                        <input type="file" name="ArchivoFactura" class="form-control" required />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editarArticuloModal" tabindex="-1" role="dialog" aria-labelledby="editarArticuloLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editarArticuloLabel">Editar Artículo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formEditarArticulo" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" id="edit_IdArticulo" />
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label>Categoría</label>
+                            <input type="text" id="edit_Categoria" class="form-control" readonly />
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label>Producto</label>
+                            <input type="text" id="edit_Producto" class="form-control" readonly />
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="edit_IdEstatusArticulo">Estatus</label>
+                        <select name="IdEstatusArticulo" id="edit_IdEstatusArticulo" class="form-control">
+                            <option value="">-- Seleccione un estatus --</option>
+                        </select>
+                    </div>
+
+                    <div id="edit_camposDinamicos"></div>
+
+                    <div class="form-group">
+                        <label for="edit_Observacion">Observación</label>
+                        <textarea name="Observacion" id="edit_Observacion" class="form-control"></textarea>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> Guardar cambios
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detallesArticuloModal" tabindex="-1" role="dialog" aria-labelledby="detallesArticuloLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="detallesArticuloLabel">Detalles del Artículo</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <dl class="row" id="detallesGenerales">
+                    <dt class="col-sm-3">Producto</dt>
+                    <dd class="col-sm-9" id="detArtProducto"></dd>
+
+                    <dt class="col-sm-3">Categoría</dt>
+                    <dd class="col-sm-9" id="detArtCategoria"></dd>
+
+                    <dt class="col-sm-3">Estatus</dt>
+                    <dd class="col-sm-9" id="detArtEstatus"></dd>
+
+                    <dt class="col-sm-3">Fecha alta</dt>
+                    <dd class="col-sm-9" id="detArtFecha"></dd>
+
+                    <dt class="col-sm-3">Observación</dt>
+                    <dd class="col-sm-9" id="detArtObservacion"></dd>
+                </dl>
+
+                <hr />
+                <h5>Atributos específicos</h5>
+                <dl class="row" id="detallesDinamicos"></dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="importarExcelModal" tabindex="-1" role="dialog" aria-labelledby="importarExcelLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="importarExcelLabel">Importar artículos desde Excel</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formImportarExcel" enctype="multipart/form-data" method="post" asp-action="ImportarExcel">
+                    @Html.AntiForgeryToken()
+
+                    <div class="form-group">
+                        <label for="IdCategoriaExcel">Categoría</label>
+                        <select id="IdCategoriaExcel" name="IdCategoria" asp-items="ViewBag.Categorias" class="form-control">
+                            <option value="">-- Seleccione una categoría --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="ArchivoExcel">Archivo Excel</label>
+                        <input type="file" id="ArchivoExcel" name="ArchivoExcel" class="form-control" accept=".xlsx,.xls" />
+                    </div>
+
+                    <div class="alert alert-info small">
+                        Asegúrese de que el archivo Excel contenga las columnas requeridas según la categoría seleccionada.
+                    </div>
+
+                    <div class="form-group text-right">
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-upload"></i> Importar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="erroresExcelModal" tabindex="-1" role="dialog" aria-labelledby="erroresExcelLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="erroresExcelLabel">Errores en importación de artículos</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+
+                <div class="alert alert-warning">
+                    <strong id="contadorErrores"></strong>
+                </div>
+
+                <table class="table table-bordered table-striped">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th scope="col">Fila</th>
+                            <th scope="col">Error</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tablaErroresExcel">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(function () {
+            var $modalCrear = $('#crearArticuloModal');
+            var $cat = $modalCrear.find('#IdCategoria');
+            var $prod = $modalCrear.find('#IdCatalogoArticulo');
+            var $est  = $modalCrear.find('#IdEstatusArticulo');
+
+            // --- Submit ---
+            $('#formCrearArticulo').on('submit', function (e) {
+                e.preventDefault();
+
+                var form = $(this);
+                var extras = {};
+                form.find('input[name^="extra["], select[name^="extra["], textarea[name^="extra["]').each(function () {
+                    let name = $(this).attr("name");
+                    let key = name.replace("extra[", "").replace("]", "");
+                    extras[key] = $(this).val();
+                });
+
+                if (Object.keys(extras).length > 0) {
+                    var jsonExtras = JSON.stringify(extras);
+                    $('#grupoCaracteristicas textarea[name="Caracteristicas"]').val(jsonExtras);
+                }
+
+                $.ajax({
+                    type: form.attr('method'),
+                    url: form.attr('action'),
+                    data: form.serialize(),
+                    success: function () {
+                        $modalCrear.modal('hide');
+                        location.reload();
+                    },
+                    error: function (xhr) {
+                        alert(xhr.responseText || "Error al crear el artículo.");
+                    }
+                });
+            });
+
+            // --- Select2 ---
+            $cat.select2({ placeholder: "-- Seleccione una categoría --", allowClear: true, width: '100%', dropdownParent: $modalCrear });
+            $prod.select2({ placeholder: "-- Seleccione un producto --", allowClear: true, width: '100%', dropdownParent: $modalCrear });
+            $est.select2({ placeholder: "-- Seleccione estatus --", allowClear: true, width: '100%', dropdownParent: $modalCrear });
+
+            // --- Cambio de categoría ---
+            $cat.off('change.categoria').on('change.categoria', function () {
+                var idCat = $(this).val();
+                $prod.empty().append('<option value="">-- Seleccione un producto --</option>');
+
+                if (idCat) {
+                    $.ajax({
+                        url: '/CatalogoArticulos/GetByCategoria',
+                        type: 'GET',
+                        data: { idCategoria: idCat },
+                        success: function (data) {
+                            $.each(data, function (i, p) {
+                                $prod.append('<option value="' + p.idCatalogoArticulo + '">' + p.nombre + '</option>');
+                            });
+                            $prod.trigger('change');
+                        },
+                        error: function (xhr) {
+                            console.log(xhr.responseText);
+                            alert('No se pudieron cargar los productos.');
+                        }
+                    });
+                } else {
+                    $prod.trigger('change');
+                    $cat.val(null).trigger('change');
+                }
+            });
+
+            // --- Cambio de producto ---
+            $('#IdCatalogoArticulo').off('change.producto').on('change.producto', function () {
+                var idProd = $(this).val();
+                var nombreProd = $("#IdCatalogoArticulo option:selected").text();
+                var $grupoCarac = $('#grupoCaracteristicas');
+
+                $('#camposExtra').remove();
+
+                if (!idProd) {
+                    $grupoCarac.show();
+                    return;
+                }
+
+                let html = '<div id="camposExtra" class="form-group"><h6>Especificaciones</h6><div class="form-row">';
+                let tieneExtras = true;
+
+                switch (nombreProd.toUpperCase()) {
+                    case "LAPTOP":
+                    case "DESKTOP":
+                        html += `
+                            <div class="form-group col-md-3">
+                                <label>RAM (GB)</label>
+                                <input type="number" class="form-control" name="extra[laptop_ram]" />
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label>Disco</label>
+                                <select class="form-control" name="extra[laptop_disco_tipo]">
+                                    <option value="SSD">SSD</option>
+                                    <option value="HDD">HDD</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label>Capacidad Disco (GB)</label>
+                                <input type="number" class="form-control" name="extra[laptop_disco_capacidad]" />
+                            </div>
+                            <div class="form-group col-md-3">
+                                <label>Procesador</label>
+                                <input type="text" class="form-control" name="extra[laptop_procesador]" />
+                            </div>
+                        `;
+                        break;
+
+                    case "IPAD":
+                        html += `
+                            <div class="form-group col-md-6">
+                                <label>Almacenamiento (GB)</label>
+                                <input type="number" class="form-control" name="extra[ipad_almacenamiento]" />
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Modelo</label>
+                                <input type="text" class="form-control" name="extra[ipad_modelo]" />
+                            </div>
+                        `;
+                        break;
+
+                    case "DRONE":
+                        html += `
+                            <div class="form-group col-md-6">
+                                <label>Autonomía (minutos)</label>
+                                <input type="number" class="form-control" name="extra[drone_autonomia]" />
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Cámara (MP)</label>
+                                <input type="number" class="form-control" name="extra[drone_camera]" />
+                            </div>
+                        `;
+                        break;
+
+                    case "USB":
+                        html += `
+                            <div class="form-group col-md-6">
+                                <label>Capacidad (GB)</label>
+                                <input type="number" class="form-control" name="extra[usb_capacidad]" />
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Versión</label>
+                                <select class="form-control" name="extra[usb_version]">
+                                    <option value="2.0">2.0</option>
+                                    <option value="3.0">3.0</option>
+                                    <option value="3.1">3.1</option>
+                                    <option value="3.2">3.2</option>
+                                </select>
+                            </div>
+                        `;
+                        break;
+
+                    case "DISCO DURO":
+                        html += `
+                            <div class="form-group col-md-6">
+                                <label>Tipo</label>
+                                <select class="form-control" name="extra[hdd_tipo]">
+                                    <option value="SSD">SSD</option>
+                                    <option value="HDD">HDD</option>
+                                </select>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label>Capacidad (GB)</label>
+                                <input type="number" class="form-control" name="extra[hdd_capacidad]" />
+                            </div>
+                        `;
+                        break;
+
+                    case "TECLADO":
+                    case "MOUSE":
+                        html += `
+                            <div class="form-group col-md-6">
+                                <div class="form-check mt-4">
+                                    <input type="checkbox" class="form-check-input" name="extra[periferico_inalambrico]" value="true" />
+                                    <label class="form-check-label">Inalámbrico</label>
+                                </div>
+                            </div>
+                        `;
+                        break;
+
+                    default:
+                        tieneExtras = false;
+                        break;
+                }
+
+                html += '</div></div>';
+
+                if (tieneExtras) {
+                    $grupoCarac.hide();
+                    $grupoCarac.after(html);
+                } else {
+                    $grupoCarac.show();
+                }
+            });
+        });
+
+                function abrirEditarArticulo(id) {
+            $.ajax({
+                url: '/Articulos/Edit/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#edit_IdArticulo').val(data.idArticulo);
+                    $('#edit_Categoria').val(data.categoria);
+                    $('#edit_Producto').val(data.producto);
+                    $('#edit_Observacion').val(data.observacion);
+
+                    var $selEst = $('#edit_IdEstatusArticulo');
+                    $selEst.empty().append('<option value="">-- Seleccione un estatus --</option>');
+                    $.each(data.estatus, function (i, e) {
+                        var sel = (e.idEstatusArticulo === data.idEstatusArticulo) ? 'selected' : '';
+                        $selEst.append('<option value="' + e.idEstatusArticulo + '" ' + sel + '>' + e.nombre + '</option>');
+                    });
+
+                    var $din = $('#edit_camposDinamicos');
+                    $din.empty();
+
+                    switch (data.categoria?.toUpperCase()) {
+                        case "TECNOLOGÍA":
+                            let extras = {};
+                            try { extras = JSON.parse(data.caracteristicas || "{}"); } catch { extras = {}; }
+
+                            let html = `
+                                <div class="form-row">
+                                    <div class="form-group col-md-4">
+                                        <label>Marca</label>
+                                        <input type="text" name="Marca" class="form-control" value="${data.marca || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Modelo</label>
+                                        <input type="text" name="Modelo" class="form-control" value="${data.modelo || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>N° Serie</label>
+                                        <input type="text" name="NumeroSerie" class="form-control" value="${data.numeroSerie || ''}" />
+                                    </div>
+                                </div>
+                                <div id="edit_camposExtra"><h6>Especificaciones</h6><div class="form-row">`;
+
+                            if (extras.laptop_ram !== undefined) {
+                                html += `<div class="form-group col-md-3">
+                                    <label>RAM (GB)</label>
+                                    <input type="number" class="form-control" name="extra[laptop_ram]" value="${extras.laptop_ram}" />
+                                </div>`;
+                            }
+                            if (extras.laptop_disco_tipo !== undefined) {
+                                html += `<div class="form-group col-md-3">
+                                    <label>Disco</label>
+                                    <select class="form-control" name="extra[laptop_disco_tipo]">
+                                        <option value="SSD" ${(extras.laptop_disco_tipo==="SSD"?"selected":"")}>SSD</option>
+                                        <option value="HDD" ${(extras.laptop_disco_tipo==="HDD"?"selected":"")}>HDD</option>
+                                    </select>
+                                </div>`;
+                            }
+                            if (extras.laptop_disco_capacidad !== undefined) {
+                                html += `<div class="form-group col-md-3">
+                                    <label>Capacidad Disco (GB)</label>
+                                    <input type="number" class="form-control" name="extra[laptop_disco_capacidad]" value="${extras.laptop_disco_capacidad}" />
+                                </div>`;
+                            }
+                            if (extras.laptop_procesador !== undefined) {
+                                html += `<div class="form-group col-md-3">
+                                    <label>Procesador</label>
+                                    <input type="text" class="form-control" name="extra[laptop_procesador]" value="${extras.laptop_procesador}" />
+                                </div>`;
+                            }
+                            if (extras.usb_capacidad !== undefined) {
+                                html += `<div class="form-group col-md-6">
+                                    <label>Capacidad USB (GB)</label>
+                                    <input type="number" class="form-control" name="extra[usb_capacidad]" value="${extras.usb_capacidad}" />
+                                </div>`;
+                            }
+                            if (extras.usb_version !== undefined) {
+                                html += `<div class="form-group col-md-6">
+                                    <label>Versión USB</label>
+                                    <select class="form-control" name="extra[usb_version]">
+                                        <option value="2.0" ${(extras.usb_version==="2.0"?"selected":"")}>2.0</option>
+                                        <option value="3.0" ${(extras.usb_version==="3.0"?"selected":"")}>3.0</option>
+                                        <option value="3.1" ${(extras.usb_version==="3.1"?"selected":"")}>3.1</option>
+                                        <option value="3.2" ${(extras.usb_version==="3.2"?"selected":"")}>3.2</option>
+                                    </select>
+                                </div>`;
+                            }
+                            if (extras.hdd_tipo !== undefined) {
+                                html += `<div class="form-group col-md-6">
+                                    <label>Tipo Disco Duro</label>
+                                    <select class="form-control" name="extra[hdd_tipo]">
+                                        <option value="SSD" ${(extras.hdd_tipo==="SSD"?"selected":"")}>SSD</option>
+                                        <option value="HDD" ${(extras.hdd_tipo==="HDD"?"selected":"")}>HDD</option>
+                                    </select>
+                                </div>`;
+                            }
+                            if (extras.hdd_capacidad !== undefined) {
+                                html += `<div class="form-group col-md-6">
+                                    <label>Capacidad Disco Duro (GB)</label>
+                                    <input type="number" class="form-control" name="extra[hdd_capacidad]" value="${extras.hdd_capacidad}" />
+                                </div>`;
+                            }
+
+                            html += `</div></div>`;
+                            $din.append(html);
+                            break;
+
+                        case "VEHÍCULOS":
+                            $din.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-4"><label>Marca</label>
+                                        <input type="text" name="Marca" class="form-control" value="${data.marca || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4"><label>Modelo</label>
+                                        <input type="text" name="Modelo" class="form-control" value="${data.modelo || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4"><label>N° Serie</label>
+                                        <input type="text" name="NumeroSerie" class="form-control" value="${data.numeroSerie || ''}" />
+                                    </div>
+                                </div>
+                                <div class="form-row">
+                                    <div class="form-group col-md-4"><label>Placas</label>
+                                        <input type="text" name="Placas" class="form-control" value="${data.placas || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4"><label>Tarjeta Circulación</label>
+                                        <input type="text" name="TarjetaCirculacion" class="form-control" value="${data.tarjetaCirculacion || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4"><label>Póliza Seguro</label>
+                                        <input type="text" name="PolizaSeguro" class="form-control" value="${data.polizaSeguro || ''}" />
+                                    </div>
+                                </div>
+                            `);
+                            break;
+
+                        case "COMBUSTIBLES":
+                            $din.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-4"><label>Tipo</label>
+                                        <input type="text" name="Tipo" class="form-control" value="${data.tipo || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4"><label>Cantidad</label>
+                                        <input type="number" step="0.01" name="Cantidad" class="form-control" value="${data.cantidad || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4"><label>Fecha Salida</label>
+                                        <input type="date" name="FechaSalida" class="form-control" value="${data.fechaSalida || ''}" />
+                                    </div>
+                                </div>
+                                <div class="form-group"><label>Destino</label>
+                                    <input type="text" name="Destino" class="form-control" value="${data.destino || ''}" />
+                                </div>
+                            `);
+                            break;
+
+                        case "HERRAMIENTAS":
+                            $din.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-4"><label>Marca</label>
+                                        <input type="text" name="Marca" class="form-control" value="${data.marca || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4"><label>Modelo</label>
+                                        <input type="text" name="Modelo" class="form-control" value="${data.modelo || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-4"><label>N° Serie</label>
+                                        <input type="text" name="NumeroSerie" class="form-control" value="${data.numeroSerie || ''}" />
+                                    </div>
+                                </div>
+                            `);
+                            break;
+
+                        case "PAPELERÍA":
+                            $din.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-6"><label>Unidad Medida</label>
+                                        <input type="text" name="UnidadMedida" class="form-control" value="${data.unidadMedida || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-6"><label>Cantidad Paquete</label>
+                                        <input type="number" name="CantidadPaquete" class="form-control" value="${data.cantidadPaquete || ''}" />
+                                    </div>
+                                </div>
+                            `);
+                            break;
+
+                        case "ENFERMERÍA":
+                            $din.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-6"><label>Fecha Caducidad</label>
+                                        <input type="date" name="FechaCaducidad" class="form-control" value="${data.fechaCaducidad || ''}" />
+                                    </div>
+                                    <div class="form-group col-md-6"><label>Lote</label>
+                                        <input type="text" name="Lote" class="form-control" value="${data.lote || ''}" />
+                                    </div>
+                                </div>
+                            `);
+                            break;
+                                case "COMUNICACIONES":
+        $din.append(`
+            <div class="form-row">
+                <div class="form-group col-md-4"><label>Marca</label>
+                    <input type="text" name="Marca" class="form-control" value="${data.marca || ''}" />
+                </div>
+                <div class="form-group col-md-4"><label>Modelo</label>
+                    <input type="text" name="Modelo" class="form-control" value="${data.modelo || ''}" />
+                </div>
+                <div class="form-group col-md-4"><label>N° Serie</label>
+                    <input type="text" name="NumeroSerie" class="form-control" value="${data.numeroSerie || ''}" />
+                </div>
+            </div>
+        `);
+        break;
+
+                    }
+
+                    $('#editarArticuloModal').modal('show');
+                },
+                error: function () {
+                    alert("No se pudieron cargar los datos del artículo.");
+                }
+            });
+        }
+
+        $('#formEditarArticulo').on('submit', function (e) {
+            e.preventDefault();
+
+            var id = $('#edit_IdArticulo').val();
+            var form = $(this);
+
+            var extras = {};
+            form.find('input[name^="extra["], select[name^="extra["], textarea[name^="extra["]').each(function () {
+                let name = $(this).attr("name");
+                let key = name.replace("extra[", "").replace("]", "");
+                if ($(this).attr("type") === "checkbox") {
+                    extras[key] = $(this).is(":checked") ? "true" : "false";
+                } else {
+                    extras[key] = $(this).val();
+                }
+            });
+
+            if (Object.keys(extras).length > 0) {
+                if (form.find('textarea[name="Caracteristicas"]').length === 0) {
+                    form.append(`<textarea name="Caracteristicas" hidden></textarea>`);
+                }
+                form.find('textarea[name="Caracteristicas"]').val(JSON.stringify(extras));
+            }
+
+            $.ajax({
+                url: '/Articulos/EditPost/' + id,
+                type: 'POST',
+                data: form.serialize(),
+                success: function () {
+                    $('#editarArticuloModal').modal('hide');
+                    location.reload();
+                },
+                error: function (xhr) {
+                    alert(xhr.responseText || "No se pudo actualizar el artículo.");
+                }
+            });
+        });
+
+
+        function claseBadgePorNombre(nombre) {
+            if (!nombre) return "secondary";
+            const clave = nombre.trim().toUpperCase();
+            switch (clave) {
+                case "ACTIVO": return "success";
+                case "ASIGNADO": return "primary";
+                case "PRESTADO": return "info";
+                case "EN REPARACIÓN":
+                case "EN REPARACION": return "warning";
+                case "DESCOMPUESTO":
+                case "PERDIDO": return "danger";
+                case "BAJA": return "dark";
+                default: return "secondary";
+            }
+        }
+
+               function abrirDetallesArticulo(id) {
+            $.ajax({
+                url: '/Articulos/DetailsJson/' + id,
+                type: 'GET',
+                success: function (data) {
+                    // Generales
+                    $('#detArtProducto').text(data.producto || '(Sin producto)');
+                    $('#detArtCategoria').text(data.categoria || '(Sin categoría)');
+                    $('#detArtObservacion').text(data.observacion || '—');
+                    $('#detArtFecha').text(data.fechaAlta || '—');
+
+                    var cls = claseBadgePorNombre(data.estatusNombre);
+                    var nom = data.estatusNombre || '—';
+                    $('#detArtEstatus').html('<span class="badge badge-' + cls + '">' + nom + '</span>');
+
+                    var $din = $('#detallesDinamicos');
+                    $din.empty();
+
+                    // ==============================
+                    //   Mostrar FACTURA si existe
+                    // ==============================
+                     if (data.idFactura) {
+                $.get('/Articulos/VerFactura/' + id, function (res) {
+                    let url = res.url;
+                    let cleanUrl = url.split('?')[0];
+                    let ext = cleanUrl.split('.').pop().toLowerCase();
+
+                    if (["jpg", "jpeg", "png"].includes(ext)) {
+                        $din.append(`
+                            <dt class="col-sm-3">Factura</dt>
+                            <dd class="col-sm-9">
+                                <a href="${url}" target="_blank">
+                                    <img src="${url}" class="img-thumbnail mt-2" style="max-height:150px;">
+                                </a>
+                            </dd>
+                        `);
+                    } else if (ext === "pdf") {
+                        $din.append(`
+                            <dt class="col-sm-3">Factura</dt>
+                            <dd class="col-sm-9">
+                                <a href="${url}" target="_blank" class="btn btn-link">Ver Factura</a>
+                            </dd>
+                        `);
+                    } else {
+                        $din.append(`
+                            <dt class="col-sm-3">Factura</dt>
+                            <dd class="col-sm-9">
+                                <a href="${url}" target="_blank" class="btn btn-link">Ver archivo</a>
+                            </dd>
+                        `);
+                    }
+                });
+            } else {
+                $din.append(`<dt class="col-sm-3">Factura</dt><dd class="col-sm-9 text-muted">No hay factura registrada</dd>`);
+            }
+
+                    // ==============================
+                    //   Categoría: TECNOLOGÍA
+                    // ==============================
+                    if (data.categoria?.toUpperCase() === "TECNOLOGÍA") {
+                        $din.append(`<dt class="col-sm-3">Marca</dt><dd class="col-sm-9">${data.marca || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Modelo</dt><dd class="col-sm-9">${data.modelo || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">N° Serie</dt><dd class="col-sm-9">${data.numeroSerie || '—'}</dd>`);
+
+                        // Especificaciones legibles
+                        if (data.caracteristicas) {
+                            let especificaciones = "";
+                            try {
+                                let extras = JSON.parse(data.caracteristicas);
+
+                                if (extras.laptop_ram)
+                                    especificaciones += `RAM: ${extras.laptop_ram} GB | `;
+                                if (extras.laptop_disco_tipo && extras.laptop_disco_capacidad)
+                                    especificaciones += `Disco: ${extras.laptop_disco_tipo} ${extras.laptop_disco_capacidad} GB | `;
+                                if (extras.laptop_procesador)
+                                    especificaciones += `Procesador: ${extras.laptop_procesador} | `;
+                                if (extras.ipad_almacenamiento)
+                                    especificaciones += `Almacenamiento: ${extras.ipad_almacenamiento} GB | `;
+                                if (extras.ipad_modelo)
+                                    especificaciones += `Modelo: ${extras.ipad_modelo} | `;
+                                if (extras.drone_autonomia)
+                                    especificaciones += `Autonomía: ${extras.drone_autonomia} min | `;
+                                if (extras.drone_camera)
+                                    especificaciones += `Cámara: ${extras.drone_camera} MP | `;
+                                if (extras.usb_capacidad)
+                                    especificaciones += `USB: ${extras.usb_capacidad} GB | `;
+                                if (extras.usb_version)
+                                    especificaciones += `Versión: ${extras.usb_version} | `;
+                                if (extras.hdd_tipo && extras.hdd_capacidad)
+                                    especificaciones += `Disco Duro: ${extras.hdd_tipo} ${extras.hdd_capacidad} GB | `;
+                                if (extras.periferico_inalambrico)
+                                    especificaciones += `Inalámbrico: ${extras.periferico_inalambrico === "true" ? "Sí" : "No"} | `;
+
+                                especificaciones = especificaciones.replace(/\s\|\s$/, "");
+                            } catch {
+                                especificaciones = data.caracteristicas;
+                            }
+
+                            $din.append(`<dt class="col-sm-3">Especificaciones</dt><dd class="col-sm-9">${especificaciones}</dd>`);
+                        }
+
+                        $din.append(`<dt class="col-sm-3">Almacén</dt><dd class="col-sm-9">${data.almacen || '—'}</dd>`);
+                    }
+
+                    // ==============================
+                    //   Categoría: VEHÍCULOS
+                    // ==============================
+                    else if (data.categoria?.toUpperCase() === "VEHÍCULOS") {
+                        $din.append(`<dt class="col-sm-3">Marca</dt><dd class="col-sm-9">${data.marca || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Modelo</dt><dd class="col-sm-9">${data.modelo || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Placas</dt><dd class="col-sm-9">${data.placas || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Tarjeta Circulación</dt><dd class="col-sm-9">${data.tarjetaCirculacion || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Póliza Seguro</dt><dd class="col-sm-9">${data.polizaSeguro || '—'}</dd>`);
+                    }
+
+                    // ==============================
+                    //   Categoría: COMBUSTIBLES
+                    // ==============================
+                    else if (data.categoria?.toUpperCase() === "COMBUSTIBLES") {
+                        $din.append(`<dt class="col-sm-3">Tipo</dt><dd class="col-sm-9">${data.tipo || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Cantidad</dt><dd class="col-sm-9">${data.cantidad || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Destino</dt><dd class="col-sm-9">${data.destino || '—'}</dd>`);
+                    }
+
+                    // ==============================
+                    //   Categoría: HERRAMIENTAS
+                    // ==============================
+                    else if (data.categoria?.toUpperCase() === "HERRAMIENTAS") {
+                        $din.append(`<dt class="col-sm-3">Marca</dt><dd class="col-sm-9">${data.marca || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Modelo</dt><dd class="col-sm-9">${data.modelo || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">N° Serie</dt><dd class="col-sm-9">${data.numeroSerie || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Almacén</dt><dd class="col-sm-9">${data.almacen || '—'}</dd>`);
+                    }
+
+                    // ==============================
+                    //   Categoría: PAPELERÍA
+                    // ==============================
+                    else if (data.categoria?.toUpperCase() === "PAPELERÍA") {
+                        $din.append(`<dt class="col-sm-3">Unidad Medida</dt><dd class="col-sm-9">${data.unidadMedida || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Cantidad Paquete</dt><dd class="col-sm-9">${data.cantidadPaquete || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Almacén</dt><dd class="col-sm-9">${data.almacen || '—'}</dd>`);
+                    }
+
+                    else if (data.categoria?.toUpperCase() === "ENFERMERÍA") {
+                        $din.append(`<dt class="col-sm-3">Fecha Caducidad</dt><dd class="col-sm-9">${data.fechaCaducidad || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Lote</dt><dd class="col-sm-9">${data.lote || '—'}</dd>`);
+                        $din.append(`<dt class="col-sm-3">Almacén</dt><dd class="col-sm-9">${data.almacen || '—'}</dd>`);
+                    }
+                            else if (data.categoria?.toUpperCase() === "COMUNICACIONES") {
+            $din.append(`<dt class="col-sm-3">Marca</dt><dd class="col-sm-9">${data.marca || '—'}</dd>`);
+            $din.append(`<dt class="col-sm-3">Modelo</dt><dd class="col-sm-9">${data.modelo || '—'}</dd>`);
+            $din.append(`<dt class="col-sm-3">N° Serie</dt><dd class="col-sm-9">${data.numeroSerie || '—'}</dd>`);
+            $din.append(`<dt class="col-sm-3">Almacén</dt><dd class="col-sm-9">${data.almacen || '—'}</dd>`);
+        }
+
+
+                    $('#detallesArticuloModal').modal('show');
+                },
+                error: function () {
+                    alert('No se pudieron cargar los detalles del artículo.');
+                }
+            });
+        }
+
+
+
+        //function abrirEstatusArticulo(id) {  }
+                        $(function () {
+            function limpiarCampos() {
+                var $prod = $('#IdCatalogoArticulo');
+                var $campos = $('#camposDinamicos');
+
+                $prod.empty().append('<option value="">-- Seleccione un producto --</option>');
+                $campos.empty();
+                $('#formCrearArticulo').attr('action', '');
+            }
+
+                $('#IdCategoria').off('change.categoria').on('change.categoria', function () {
+                var idCat = $(this).val();
+                var $prod = $('#IdCatalogoArticulo');
+                var $campos = $('#camposDinamicos');
+
+                $prod.empty().append('<option value="">-- Seleccione un producto --</option>');
+                $campos.empty();
+
+                if (idCat) {
+                    $.ajax({
+                        url: '/CatalogoArticulos/GetByCategoria',
+                        type: 'GET',
+                        data: { idCategoria: idCat },
+                        success: function (data) {
+                            $.each(data, function (i, p) {
+                                $prod.append('<option value="' + p.idCatalogoArticulo + '">' + p.nombre + '</option>');
+                            });
+                        }
+                    });
+
+                    switch (parseInt(idCat)) {
+                        case 1:
+                            $campos.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-4">
+                                        <label>Marca</label><input type="text" name="Marca" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Modelo</label><input type="text" name="Modelo" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Número de serie</label><input type="text" name="NumeroSerie" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="form-group" id="grupoCaracteristicas">
+                                    <label for="Caracteristicas" class="control-label">Características</label>
+                                    <textarea name="Caracteristicas" id="Caracteristicas" class="form-control" placeholder="Observaciones"></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>Almacén</label>
+                                    <select name="IdAlmacen" class="form-control" id="IdAlmacen"></select>
+                               </div>
+                            `);
+                            $('#formCrearArticulo').attr('action', '/Articulos/CreateTecnologia');
+                             cargarAlmacenes();
+                            break;
+
+                        case 3:
+                               $campos.append(`
+                         <div class="form-row">
+                             <div class="form-group col-md-4">
+                                 <label>Marca</label><input type="text" name="Marca" class="form-control" />
+                             </div>
+                             <div class="form-group col-md-4">
+                                 <label>Modelo</label><input type="text" name="Modelo" class="form-control" />
+                             </div>
+                             <div class="form-group col-md-4">
+                                 <label>Número de serie</label><input type="text" name="NumeroSerie" class="form-control" />
+                             </div>
+                         </div>
+                         <div class="form-row">
+                             <div class="form-group col-md-3">
+                                 <label>Placas</label><input type="text" name="Placas" class="form-control" />
+                             </div>
+                             <div class="form-group col-md-3">
+                                 <label>Tarjeta de circulación</label><input type="text" name="TarjetaCirculacion" class="form-control" />
+                             </div>
+                             <div class="form-group col-md-3">
+                                 <label>Póliza de seguro</label><input type="text" name="PolizaSeguro" class="form-control" />
+                             </div>
+                             <div class="form-group col-md-3">
+                                 <label>Color</label><input type="text" name="Color" class="form-control" />
+                             </div>
+                         </div>
+                         <div class="form-row">
+                             <div class="form-group col-md-3">
+                                 <label>Año</label><input type="number" name="Anio" class="form-control" />
+                             </div>
+                             <div class="form-group col-md-3">
+                                 <label>Combustible</label>
+                                 <select name="Combustible" class="form-control">
+                                     <option value="">-- Seleccione --</option>
+                                     <option value="Gasolina">Gasolina</option>
+                                     <option value="Diesel">Diesel</option>
+                                 </select>
+                             </div>
+                             <div class="form-group col-md-3">
+                                 <label>Kilometraje</label><input type="number" name="Kilometraje" class="form-control" />
+                             </div>
+                             <div class="form-group col-md-3">
+                                 <label>Transmisión</label>
+                                 <select name="Transmision" class="form-control" required>
+                                     <option value="">-- Seleccione --</option>
+                                     <option value="Manual">Manual</option>
+                                     <option value="Automática">Automática</option>
+                                 </select>
+                             </div>
+                         </div>
+                       `);
+                            $('#formCrearArticulo').attr('action', '/Articulos/CreateVehiculo');
+                            break;
+
+                        case 4:
+                            $campos.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-4">
+                                        <label>Tipo</label><input type="text" name="Tipo" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Cantidad</label><input type="number" step="0.01" name="Cantidad" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Fecha salida</label><input type="date" name="FechaSalida" class="form-control" />
+                                    </div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Destino</label><input type="text" name="Destino" class="form-control" />
+                                </div>
+                            `);
+                            $('#formCrearArticulo').attr('action', '/Articulos/CreateCombustible');
+                            break;
+
+                        case 2:
+                            $campos.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-4">
+                                        <label>Marca</label><input type="text" name="Marca" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Modelo</label><input type="text" name="Modelo" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-4">
+                                        <label>Número de serie</label><input type="text" name="NumeroSerie" class="form-control" />
+                                    </div>
+                                    <div class="form-group">
+                                       <label>Almacén</label>
+                                       <select name="IdAlmacen" class="form-control" id="IdAlmacen"></select>
+                                    </div>
+                                </div>
+                            `);
+                            $('#formCrearArticulo').attr('action', '/Articulos/CreateHerramienta');
+                             cargarAlmacenes();
+                            break;
+
+                        case 5:
+                            $campos.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <label>Unidad de medida</label><input type="text" name="UnidadMedida" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label>Cantidad por paquete</label><input type="number" name="CantidadPaquete" class="form-control" />
+                                    </div>
+                                    <div class="form-group">
+                                         <label>Almacén</label>
+                                         <select name="IdAlmacen" class="form-control" id="IdAlmacen"></select>
+                                    </div>
+                                </div>
+                            `);
+                            $('#formCrearArticulo').attr('action', '/Articulos/CreatePapeleria');
+                             cargarAlmacenes();
+                            break;
+
+                        case 6:
+                            $campos.append(`
+                                <div class="form-row">
+                                    <div class="form-group col-md-6">
+                                        <label>Fecha de caducidad</label><input type="date" name="FechaCaducidad" class="form-control" />
+                                    </div>
+                                    <div class="form-group col-md-6">
+                                        <label>Lote</label><input type="text" name="Lote" class="form-control" />
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Almacén</label>
+                                        <select name="IdAlmacen" class="form-control" id="IdAlmacen"></select>
+                                    </div>
+                                </div>
+                            `);
+                            $('#formCrearArticulo').attr('action', '/Articulos/CreateEnfermeria');
+                             cargarAlmacenes();
+                            break;
+
+                                case 1008:
+        $campos.append(`
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>Marca</label><input type="text" name="Marca" class="form-control" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Modelo</label><input type="text" name="Modelo" class="form-control" />
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Número de serie</label><input type="text" name="NumeroSerie" class="form-control" />
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Almacén</label>
+                <select name="IdAlmacen" class="form-control" id="IdAlmacen"></select>
+            </div>
+        `);
+        $('#formCrearArticulo').attr('action', '/Articulos/CreateComunicaciones');
+        cargarAlmacenes();
+        break;
+
+                    }
+                } else {
+                    limpiarCampos();
+                }
+            });
+
+        });
+
+                   function cargarAlmacenes() {
+            $.ajax({
+                url: '@Url.Action("GetAll", "Almacenes")',
+                type: 'GET',
+                success: function (data) {
+                    var $almacen = $('#IdAlmacen');
+                    $almacen.empty().append('<option value="">-- Seleccione un almacén --</option>');
+                    $.each(data, function (i, al) {
+                        $almacen.append('<option value="' + al.idAlmacen + '">' + al.nombre + '</option>');
+                    });
+                },
+                error: function () {
+                    alert("No se pudieron cargar los almacenes.");
+                }
+            });
+        }
+                $(function () {
+            $('#formImportarExcel').on('submit', function (e) {
+                e.preventDefault();
+
+                var form = $(this)[0];
+                var formData = new FormData(form);
+
+                $("#loadingOverlay").fadeIn();
+
+                $.ajax({
+                    url: form.action,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function (resp) {
+                        $("#loadingOverlay").fadeOut();
+                        $('#importarExcelModal').modal('hide');
+
+                        if (resp.ok) {
+                            alert(resp.mensaje);
+                            location.reload();
+                        } else {
+                            let tbody = $("#tablaErroresExcel");
+                            tbody.empty();
+
+                            resp.errores.forEach(e => {
+                                tbody.append(`
+                                    <tr>
+                                        <td>${e.fila}</td>
+                                        <td>${e.mensaje}</td>
+                                    </tr>
+                                `);
+                            });
+
+                            $("#contadorErrores").text(`Se encontraron ${resp.errores.length} errores en la importación.`);
+                            $("#erroresExcelModal").modal("show");
+                        }
+                    },
+                    error: function (xhr) {
+                        $("#loadingOverlay").fadeOut();
+                        alert(xhr.responseText || "Error al importar los artículos.");
+                    }
+                });
+            });
+        });
+
+                function cargarFacturas() {
+            $.getJSON('/Facturas/GetFacturas', function (data) {
+                var $factura = $('#IdFactura');
+                $factura.empty().append('<option value="">-- Seleccione una factura --</option>');
+                $.each(data, function (i, f) {
+                    $factura.append('<option value="' + f.idFactura + '">' + f.numeroFactura + '</option>');
+                });
+            });
+        }
+
+        $('#crearArticuloModal').on('show.bs.modal', function () {
+            cargarFacturas();
+        });
+
+                $('#formCrearFactura').on('submit', function (e) {
+            e.preventDefault();
+            var form = $(this)[0];
+            var data = new FormData(form);
+
+            $.ajax({
+                url: '/Facturas/CreateFactura',
+                type: 'POST',
+                data: data,
+                processData: false,
+                contentType: false,
+                success: function (resp) {
+                    $('#crearFacturaModal').modal('hide');
+                    cargarFacturas();
+                    $('#IdFactura').val(resp.idFactura).trigger('change');
+                },
+                error: function (xhr) {
+                    alert(xhr.responseText || "Error al guardar la factura.");
+                }
+            });
+        });
+
+
+    </script>
+}

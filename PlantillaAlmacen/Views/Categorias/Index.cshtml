@@ -1,0 +1,379 @@
+﻿@model Paginacion<Categoria>
+
+@{
+    ViewData["Title"] = "Categorías";
+    Layout = "_Layout";
+
+    var nuevaCategoria = new PlantillaAlmacen.Models.Categoria();
+
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Listado de categorías</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#crearCategoriaModal">
+                    <i class="fas fa-plus"></i> Nueva categoría
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary">
+            <div class="card-body">
+                <form asp-action="Index" method="get" class="form-inline mb-3">
+                    <div class="input-group w-50">
+                        <input type="text" name="buscador" value="@ViewData["Buscador"]"
+                               class="form-control" placeholder="Buscar por nombre...">
+                        <span class="input-group-append">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-list"></i> Ver todo
+                            </a>
+                        </span>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover text-nowrap">
+                        <thead class="bg-dark">
+                            <tr>
+                                <th>
+                                    <a asp-action="Index"
+                                       asp-route-ordenacion="@ViewData["OrdenacionNombres"]"
+                                       asp-route-buscador="@ViewData["Buscador"]"
+                                       class="text-white">
+                                        Nombre <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th>Estatus</th>
+                                <th style="width:150px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@Html.DisplayFor(modelItem => item.Nombre)</td>
+                                    <td>
+                                        @if (item.Estatus == true)
+                                        {
+                                            <span class="badge badge-success">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-danger">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" onclick="abrirEditarModal(@item.IdCategoria)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-info" onclick="abrirDetallesModal(@item.IdCategoria)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm"
+                                                onclick="abrirEstatusModal(@item.IdCategoria)">
+                                            <i class="fas @(item.Estatus ? "fa-ban text-danger" : "fa-check text-success")"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    @{
+                        var previoDeshabilitado = !Model.TienePaginaAnterior ? "disabled" : "";
+                        var siguienteDeshabilitado = !Model.TienePaginaSiguiente ? "disabled" : "";
+                    }
+                    <div class="btn-group" role="group">
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina - 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           class="btn btn-secondary @previoDeshabilitado">
+                            <i class="fas fa-chevron-left"></i> Previo
+                        </a>
+
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina + 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           class="btn btn-secondary @siguienteDeshabilitado">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+                    <div class="text-muted">
+                        Página <strong>@Model.IndicePagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="crearCategoriaModal" tabindex="-1" role="dialog" aria-labelledby="crearCategoriaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="crearCategoriaLabel">Nueva Categoría</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formCrearCategoria" asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="form-group">
+                        <label for="Nombre" class="control-label">Nombre</label>
+                        <input type="text" name="Nombre" id="Nombre" class="form-control" placeholder="Ingrese el nombre de la categoría" />
+                        <span class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editarCategoriaModal" tabindex="-1" role="dialog" aria-labelledby="editarCategoriaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editarCategoriaLabel">Editar Categoría</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarCategoria" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="editIdCategoria" name="id" />
+
+                    <div class="form-group">
+                        <label for="editNombre" class="control-label">Nombre</label>
+                        <input type="text" id="editNombre" name="Nombre" class="form-control" placeholder="Ingrese el nombre de la categoría" />
+                        <span class="text-danger"></span>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar cambios
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detallesCategoriaModal" tabindex="-1" role="dialog" aria-labelledby="detallesCategoriaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="detallesCategoriaLabel">Detalles de Categoría</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Nombre</dt>
+                    <dd class="col-sm-9" id="detNombre"></dd>
+
+                    <dt class="col-sm-3">Estatus</dt>
+                    <dd class="col-sm-9" id="detEstatus"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="estatusCategoriaModal" tabindex="-1" role="dialog" aria-labelledby="estatusCategoriaLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-dark">
+                <h5 class="modal-title" id="estatusCategoriaLabel">Cambiar Estatus</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="estatusMensaje"></p>
+                <dl class="row">
+                    <dt class="col-sm-3">Nombre</dt>
+                    <dd class="col-sm-9" id="desNombre"></dd>
+
+                    <dt class="col-sm-3">Estatus</dt>
+                    <dd class="col-sm-9" id="desEstatus"></dd>
+                </dl>
+                <input type="hidden" id="desIdCategoria" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn" id="btnCambiarEstatus">
+                    <i class="fas" id="iconEstatus"></i> <span id="textoEstatus"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+         $(document).ready(function () {
+             $('#formCrearCategoria').submit(function (e) {
+                 e.preventDefault();
+                 var form = $(this);
+                 $.ajax({
+                     type: form.attr('method'),
+                     url: form.attr('action'),
+                     data: form.serialize(),
+                     success: function (response) {
+                         $('#crearCategoriaModal').modal('hide');
+                         location.reload();
+                     },
+                     error: function () {
+                         alert("Error al crear la categoría");
+                     }
+                 });
+             });
+         });
+
+         function abrirEditarModal(id) {
+             $.ajax({
+                 url: '/Categorias/Edit/' + id,
+                 type: 'GET',
+                 success: function (data) {
+                     $('#editIdCategoria').val(data.idCategoria);
+                     $('#editNombre').val(data.nombre);
+                     $('#editarCategoriaModal').modal('show');
+                 },
+                 error: function () {
+                     alert("No se pudo cargar la categoría.");
+                 }
+             });
+         }
+
+         $(document).ready(function () {
+             $('#formEditarCategoria').submit(function (e) {
+                 e.preventDefault();
+
+                 var token = $('input[name="__RequestVerificationToken"]', this).val();
+
+                 $.ajax({
+                     url: '/Categorias/EditPost',
+                     type: 'POST',
+                     data: {
+                         __RequestVerificationToken: token,
+                         id: $('#editIdCategoria').val(),
+                         Nombre: $('#editNombre').val()
+                     },
+                     success: function () {
+                         $('#editarCategoriaModal').modal('hide');
+                         location.reload();
+                     },
+                     error: function () {
+                         alert("Error al actualizar la categoría");
+                     }
+                 });
+             });
+         });
+         function abrirDetallesModal(id) {
+             $.ajax({
+                 url: '/Categorias/Details/' + id,
+                 type: 'GET',
+                 success: function (data) {
+                     $('#detNombre').text(data.nombre);
+                     $('#detEstatus').html(data.estatus ?
+                         '<span class="badge badge-success">Activo</span>' :
+                         '<span class="badge badge-danger">Inactivo</span>'
+                     );
+                     $('#detallesCategoriaModal').modal('show');
+                 },
+                 error: function () {
+                     alert("No se pudieron cargar los detalles de la categoría.");
+                 }
+             });
+         }
+
+        function abrirEstatusModal(id) {
+             $.ajax({
+                 url: '/Categorias/DetallesJson/' + id,
+                 type: 'GET',
+                 success: function (data) {
+                     $('#desIdCategoria').val(data.idCategoria);
+                     $('#desNombre').text(data.nombre);
+                     if (data.estatus) {
+                         $('#desEstatus').html('<span class="badge badge-success">Activo</span>');
+                         $('#btnCambiarEstatus').removeClass('btn-success').addClass('btn-danger');
+                         $('#iconEstatus').removeClass('fa-check').addClass('fa-ban');
+                         $('#textoEstatus').text('Desactivar');
+                     } else {
+                         $('#desEstatus').html('<span class="badge badge-danger">Inactivo</span>');
+                         $('#btnCambiarEstatus').removeClass('btn-danger').addClass('btn-success');
+                         $('#iconEstatus').removeClass('fa-ban').addClass('fa-check');
+                         $('#textoEstatus').text('Activar');
+                     }
+                     $('#estatusCategoriaModal').modal('show');
+                 },
+                 error: function () {
+                     alert("No se pudieron cargar los detalles de la categoría. Por favor intente nuevamente.");
+                 }
+             });
+         }
+
+         $('#btnCambiarEstatus').click(function () {
+             var id = $('#desIdCategoria').val();
+
+             $.ajax({
+                 url: '/Categorias/CambiarEstatus/' + id,
+                 type: 'POST',
+                 data: {
+                     __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').val()
+                 },
+                 success: function (response) {
+                     $('#estatusCategoriaModal').modal('hide');
+                     location.reload();
+                 },
+                 error: function () {
+                     alert("Error al actualizar el estatus de la categoría.");
+                 }
+             });
+         });
+
+    </script>
+}

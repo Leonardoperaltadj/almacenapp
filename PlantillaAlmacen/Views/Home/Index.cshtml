@@ -1,0 +1,145 @@
+﻿@{
+    ViewData["Title"] = "Inicio";
+    Layout = "_Layout";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0 text-dark">Dashboard</h1>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalPersonal</h3>
+                        <p>Personal Registrado</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-users"></i></div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalArticulos</h3>
+                        <p>Artículos Totales</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-boxes"></i></div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalVehiculos</h3>
+                        <p>Vehículos</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-car"></i></div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalTecnologia</h3>
+                        <p>Tecnología</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-laptop"></i></div>
+                </div>
+            </div>
+
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalHerramientas</h3>
+                        <p>Herramientas</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-tools"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="mt-4">📊 Tecnología por Producto</h4>
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-secondary">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalMouses</h3>
+                        <p>Mouses</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-mouse"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-dark">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalImpresoras</h3>
+                        <p>Impresoras</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-print"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-primary">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalDesktops</h3>
+                        <p>Desktops</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-desktop"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-success">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalLaptops</h3>
+                        <p>Laptops</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-laptop-code"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="mt-4">🚘 Vehículos</h4>
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-info">
+                    <div class="inner">
+                        <h3>@ViewBag.TotalCamionetas</h3>
+                        <p>Camionetas</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-truck-pickup"></i></div>
+                </div>
+            </div>
+        </div>
+
+        <h4 class="mt-4">📌 Asignaciones</h4>
+        <div class="row">
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-warning">
+                    <div class="inner">
+                        <h3>@ViewBag.LaptopsAsignadas</h3>
+                        <p>Laptops Asignadas</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-laptop"></i></div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="small-box bg-danger">
+                    <div class="inner">
+                        <h3>@ViewBag.CamionetasAsignadas</h3>
+                        <p>Camionetas Asignadas</p>
+                    </div>
+                    <div class="icon"><i class="fas fa-truck"></i></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

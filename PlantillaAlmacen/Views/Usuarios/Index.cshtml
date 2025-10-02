@@ -1,0 +1,504 @@
+﻿@model Paginacion<PlantillaAlmacen.Models.Usuario>
+
+@{
+    ViewData["Title"] = "Usuarios";
+    Layout = "_Layout";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Listado de usuarios</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#crearUsuarioModal">
+                    <i class="fas fa-plus"></i> Nuevo usuario
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary">
+            <div class="card-body">
+                <form asp-action="Index" method="get" class="form-inline mb-3">
+                    <div class="input-group w-50">
+                        <input type="text" name="buscador" value="@ViewData["Buscador"]"
+                               class="form-control" placeholder="Buscar por email o personal...">
+                        <span class="input-group-append">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-list"></i> Ver todo
+                            </a>
+                        </span>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover text-nowrap">
+                        <thead class="bg-dark">
+                            <tr>
+                                <th>
+                                    <a asp-action="Index"
+                                       asp-route-ordenacion="@ViewData["OrdenacionEmail"]"
+                                       asp-route-buscador="@ViewData["Buscador"]"
+                                       class="text-white">
+                                        Email <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th>Personal</th>
+                                <th>Estatus</th>
+                                <th>Fecha alta</th>
+                                <th style="width:150px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td>@item.Email</td>
+                                    <td>@item.Personal?.Nombre</td>
+                                    <td>
+                                        @if (item.Estatus)
+                                        {
+                                            <span class="badge badge-success">Activo</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-danger">Inactivo</span>
+                                        }
+                                    </td>
+                                    <td>@item.FechaAlta.ToString("dd/MM/yyyy HH:mm")</td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" onclick="abrirEditarUsuario(@item.IdUsuario)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-info" onclick="abrirDetallesUsuario(@item.IdUsuario)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm" onclick="abrirEstatusUsuario(@item.IdUsuario)">
+                                            <i class="fas @(item.Estatus ? "fa-ban text-danger" : "fa-check text-success")"></i>
+                                        </button>
+                                        <button type="button"
+                                                class="btn btn-sm btn-secondary"
+                                                title="Cambiar contraseña"
+                                                onclick="abrirPasswordModal(@item.IdUsuario)">
+                                            <i class="fas fa-key"></i>
+                                        </button>
+
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    @{
+                        var previoDeshabilitado = !Model.TienePaginaAnterior ? "disabled" : "";
+                        var siguienteDeshabilitado = !Model.TienePaginaSiguiente ? "disabled" : "";
+                    }
+
+                    <div class="btn-group" role="group">
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina - 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           class="btn btn-secondary @previoDeshabilitado">
+                            <i class="fas fa-chevron-left"></i> Previo
+                        </a>
+
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina + 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           class="btn btn-secondary @siguienteDeshabilitado">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="text-muted">
+                        Página <strong>@Model.IndicePagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="crearUsuarioModal" tabindex="-1" role="dialog" aria-labelledby="crearUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="crearUsuarioLabel">Nuevo usuario</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form asp-action="Create" id="formCrearUsuario" method="post">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                    <div class="form-group mt-3">
+                        <label for="Email">Email</label>
+                        <input type="email" name="Email" id="Email" class="form-control" placeholder="correo@dominio.com" />
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="Contrasena">Contraseña</label>
+                        <input type="password" name="Contrasena" id="Contrasena" class="form-control" placeholder="Contraseña" />
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="IdPersonal">Personal</label>
+                        <select name="IdPersonal" id="IdPersonal" asp-items="ViewBag.Personales" class="form-control">
+                            <option value="">-- Seleccione el personal --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editarUsuarioModal" tabindex="-1" role="dialog" aria-labelledby="editarUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editarUsuarioLabel">Editar usuario</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="formEditarUsuario" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="edit_IdUsuario" name="id" />
+
+                    <div class="form-group mt-3">
+                        <label for="edit_Email">Email</label>
+                        <input type="email" id="edit_Email" name="Email" class="form-control" />
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="edit_IdPersonal">Personal</label>
+                        <select id="edit_IdPersonal" name="IdPersonal" class="form-control">
+                            <option value="">-- Seleccione el personal --</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> Guardar cambios
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detallesUsuarioModal" tabindex="-1" role="dialog" aria-labelledby="detallesUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="detallesUsuarioLabel">Detalles del usuario</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <dl class="row">
+
+                    <dt class="col-sm-3">Email</dt>
+                    <dd class="col-sm-9" id="detEmail"></dd>
+
+                    <dt class="col-sm-3">Personal</dt>
+                    <dd class="col-sm-9" id="detPersonal"></dd>
+
+                    <dt class="col-sm-3">Estatus</dt>
+                    <dd class="col-sm-9" id="detEstatus"></dd>
+
+                    <dt class="col-sm-3">Fecha alta</dt>
+                    <dd class="col-sm-9" id="detFechaAlta"></dd>
+                </dl>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="estatusUsuarioModal" tabindex="-1" role="dialog" aria-labelledby="estatusUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-dark">
+                <h5 class="modal-title" id="estatusUsuarioLabel">Cambiar estatus</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p id="estatusMensaje"></p>
+                <dl class="row">
+
+                    <dt class="col-sm-3">Estatus</dt>
+                    <dd class="col-sm-9" id="desEstatus"></dd>
+                </dl>
+                <input type="hidden" id="desIdUsuario" />
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn" id="btnCambiarEstatus">
+                    <i class="fas" id="iconEstatus"></i> <span id="textoEstatus"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="passwordUsuarioModal" tabindex="-1" role="dialog" aria-labelledby="passwordUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="passwordUsuarioLabel">Cambiar contraseña</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formCambiarPassword" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="pass_IdUsuario" name="id" />
+
+                    <div class="form-group">
+                        <label for="NuevaContrasena">Nueva contraseña</label>
+                        <div class="input-group">
+                            <input type="password" id="NuevaContrasena" name="NuevaContrasena" class="form-control" placeholder="Nueva contraseña" />
+                            <div class="input-group-append">
+                                <button class="btn btn-outline-secondary" type="button" id="toggleVerPassword">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <small class="form-text text-muted">Mínimo 8 caracteres.</small>
+                    </div>
+
+                    <div class="form-group text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+        $(function () {
+            $('#formCrearUsuario').on('submit', function (e) {
+                e.preventDefault();
+                var form = $(this);
+                $.ajax({
+                    type: form.attr('method'),
+                    url: form.attr('action'),
+                    data: form.serialize(),
+                    success: function () {
+                        $('#crearUsuarioModal').modal('hide');
+                        location.reload();
+                    },
+                    error: function (xhr) {
+                        alert(xhr.responseText || "Error al crear el usuario.");
+                    }
+                });
+            });
+        });
+
+        function abrirEditarUsuario(id) {
+            $.ajax({
+                url: '/Usuarios/Edit/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#edit_IdUsuario').val(data.idUsuario);
+                    $('#edit_Email').val(data.email || '');
+
+                    var $sel = $('#edit_IdPersonal');
+                    $sel.empty().append('<option value="">-- Seleccione el personal --</option>');
+                    $.each(data.personales, function (i, p) {
+                        var sel = (p.idPersonal === data.idPersonal) ? 'selected' : '';
+                        $sel.append('<option value="' + p.idPersonal + '" ' + sel + '>' + p.nombre + '</option>');
+                    });
+
+                    $('#editarUsuarioModal').modal('show');
+                },
+                error: function () {
+                    alert("No se pudieron cargar los datos del usuario.");
+                }
+            });
+        }
+
+        $('#formEditarUsuario').on('submit', function (e) {
+            e.preventDefault();
+            var id = $('#edit_IdUsuario').val();
+            var token = $('input[name="__RequestVerificationToken"]', this).val();
+
+            $.ajax({
+                url: '/Usuarios/EditPost/' + id,
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: token,
+                    Email: $('#edit_Email').val(),
+                    IdPersonal: $('#edit_IdPersonal').val()
+                },
+                success: function () {
+                    $('#editarUsuarioModal').modal('hide');
+                    location.reload();
+                },
+                error: function (xhr) {
+                    alert(xhr.responseText || "No se pudo actualizar el usuario.");
+                }
+            });
+        });
+
+        function abrirDetallesUsuario(id) {
+            $.ajax({
+                url: '/Usuarios/DetailsJson/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#detEmail').text(data.email || '');
+                    $('#detPersonal').text(data.personal || '');
+                    $('#detEstatus').html(data.estatus ? '<span class="badge badge-success">Activo</span>' : '<span class="badge badge-danger">Inactivo</span>');
+                    $('#detFechaAlta').text(data.fechaAlta || '');
+                    $('#detallesUsuarioModal').modal('show');
+                },
+                error: function () {
+                    alert('No se pudieron cargar los detalles del usuario.');
+                }
+            });
+        }
+
+        function abrirEstatusUsuario(id) {
+            $.ajax({
+                url: '/Usuarios/DetailsJson/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#desIdUsuario').val(data.idUsuario);
+                    if (data.estatus) {
+                        $('#desEstatus').html('<span class="badge badge-success">Activo</span>');
+                        $('#btnCambiarEstatus').removeClass('btn-success').addClass('btn-danger');
+                        $('#iconEstatus').removeClass('fa-check').addClass('fa-ban');
+                        $('#textoEstatus').text('Desactivar');
+                    } else {
+                        $('#desEstatus').html('<span class="badge badge-danger">Inactivo</span>');
+                        $('#btnCambiarEstatus').removeClass('btn-danger').addClass('btn-success');
+                        $('#iconEstatus').removeClass('fa-ban').addClass('fa-check');
+                        $('#textoEstatus').text('Activar');
+                    }
+                    $('#estatusUsuarioModal').modal('show');
+                },
+                error: function () {
+                    alert("No se pudieron cargar los detalles del usuario. Por favor intente nuevamente.");
+                }
+            });
+        }
+
+        $('#btnCambiarEstatus').click(function () {
+            var id = $('#desIdUsuario').val();
+            $.ajax({
+                url: '/Usuarios/CambiarEstatus/' + id,
+                type: 'POST',
+                data: {
+                    __RequestVerificationToken: $('input[name="__RequestVerificationToken"]').first().val()
+                },
+                success: function () {
+                    $('#estatusUsuarioModal').modal('hide');
+                    location.reload();
+                },
+                error: function () {
+                    alert("Error al actualizar el estatus del usuario.");
+                }
+            });
+        });
+
+               function abrirPasswordModal(id) {
+          // Si quieres, podrías traer datos del usuario, pero con el id basta:
+          $('#pass_IdUsuario').val(id);
+          $('#NuevaContrasena').val('');
+          $('#passwordUsuarioModal').modal('show');
+        }
+
+        // Mostrar/Ocultar contraseña
+        $('#toggleVerPassword').on('click', function () {
+          const inp = $('#NuevaContrasena');
+          const isPass = inp.attr('type') === 'password';
+          inp.attr('type', isPass ? 'text' : 'password');
+          $(this).find('i').toggleClass('fa-eye fa-eye-slash');
+        });
+
+        // Envío AJAX
+        $('#formCambiarPassword').on('submit', function (e) {
+          e.preventDefault();
+
+          var id = $('#pass_IdUsuario').val();
+          var token = $('input[name="__RequestVerificationToken"]', this).val();
+          var nueva = $('#NuevaContrasena').val();
+
+          if (!nueva || nueva.length < 8) {
+            alert('La contraseña debe tener al menos 8 caracteres.');
+            return;
+          }
+
+          $.ajax({
+            url: '/Usuarios/CambiarPassword/' + id,
+            type: 'POST',
+            data: {
+              __RequestVerificationToken: token,
+              NuevaContrasena: nueva
+            },
+            success: function () {
+              $('#passwordUsuarioModal').modal('hide');
+
+              location.reload();
+            },
+            error: function (xhr) {
+              alert(xhr.responseText || 'No se pudo actualizar la contraseña.');
+            }
+          });
+        });
+
+    </script>
+}
+

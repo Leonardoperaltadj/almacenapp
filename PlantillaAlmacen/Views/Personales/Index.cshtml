@@ -1,0 +1,562 @@
+﻿@model Paginacion<PlantillaAlmacen.Models.Personal>
+
+@{
+    ViewData["Title"] = "Personal";
+    Layout = "_Layout";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-sm-6">
+                <h1 class="m-0">Listado de personal</h1>
+            </div>
+            <div class="col-sm-6 text-right">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#crearPersonalModal">
+                    <i class="fas fa-plus"></i> Nuevo registro
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-outline card-secondary">
+            <div class="card-body">
+                <form asp-action="Index" method="get" class="form-inline mb-3">
+                    <div class="input-group w-50">
+                        <input type="text" name="buscador" value="@ViewData["Buscador"]"
+                               class="form-control" placeholder="Buscar por nombre, puesto o departamento...">
+                        <span class="input-group-append">
+                            <button type="submit" class="btn btn-outline-primary">
+                                <i class="fas fa-search"></i>
+                            </button>
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="fas fa-list"></i> Ver todo
+                            </a>
+                        </span>
+                    </div>
+                </form>
+
+                <div class="table-responsive">
+                    <table class="table table-hover text-nowrap">
+                        <thead class="bg-dark">
+                            <tr>
+                                <th>
+                                    <a asp-action="Index"
+                                       asp-route-ordenacion="@ViewData["OrdenacionNombre"]"
+                                       asp-route-buscador="@ViewData["Buscador"]"
+                                       asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                                       class="text-white">
+                                        Nombre <i class="fas fa-sort"></i>
+                                    </a>
+                                </th>
+                                <th>Puesto</th>
+                                <th>Departamento</th>
+                                <th>Estatus</th>
+                                <th style="width:120px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in Model)
+                            {
+                                var est = item.EstatusPersonal?.Nombre?.Trim() ?? "";
+                                var clave = est.ToUpperInvariant();
+                                string badge = clave switch
+                                {
+                                    "ACTIVO" => "success",
+                                    "ASIGNADO" => "primary",
+                                    "TEMPORAL" => "info",
+                                    "EN CONTRATACIÓN" => "info",
+                                    "EN CONTRATACION" => "info",
+                                    "CAPACITACIÓN" => "info",
+                                    "CAPACITACION" => "info",
+                                    "VACACIONES" => "warning",
+                                    "PERMISO" => "warning",
+                                    "INCAPACIDAD" => "warning",
+                                    "TRASLADO" => "secondary",
+                                    "REINGRESO" => "secondary",
+                                    "SUSPENDIDO" => "dark",
+                                    "INACTIVO" => "dark",
+                                    "BAJA" => "dark",
+                                    _ => "secondary"
+                                };
+
+                                <tr>
+                                    <td>@item.Nombre</td>
+                                    <td>@item.Puesto?.Nombre</td>
+                                    <td>@item.Departamento?.Nombre</td>
+                                    <td>
+                                        @if (item.EstatusPersonal != null)
+                                        {
+                                            <span class="badge badge-@badge">@est</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge badge-secondary">—</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <button type="button" class="btn btn-sm btn-warning" onclick="abrirEditarPersonal(@item.IdPersonal)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-info" onclick="abrirDetallesPersonal(@item.IdPersonal)">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+
+                                    </td>
+
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="card-footer d-flex justify-content-between align-items-center">
+                    @{
+                        var previoDeshabilitado = !Model.TienePaginaAnterior ? "disabled" : "";
+                        var siguienteDeshabilitado = !Model.TienePaginaSiguiente ? "disabled" : "";
+                    }
+
+                    <div class="btn-group" role="group">
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina - 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                           class="btn btn-secondary @previoDeshabilitado">
+                            <i class="fas fa-chevron-left"></i> Previo
+                        </a>
+
+                        <a asp-action="Index"
+                           asp-route-ordenacion="@ViewData["Ordenacion"]"
+                           asp-route-numeroPagina="@(Model.IndicePagina + 1)"
+                           asp-route-buscador="@ViewData["Buscador"]"
+                           asp-route-tamanoPagina="@ViewData["TamanoPagina"]"
+                           class="btn btn-secondary @siguienteDeshabilitado">
+                            Siguiente <i class="fas fa-chevron-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="text-muted">
+                        Página <strong>@Model.IndicePagina</strong> de <strong>@Model.TotalPaginas</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="crearPersonalModal" tabindex="-1" role="dialog" aria-labelledby="crearPersonalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="crearPersonalLabel">Nuevo personal</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form asp-action="Create" id="formCrearPersonal" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+                    <div class="form-group">
+                        <label for="Nombre">Nombre</label>
+                        <input type="text" name="Nombre" id="Nombre" class="form-control" placeholder="Nombre completo" />
+                    </div>
+                    <div class="form-row mt-3">
+                        <div class="form-group col-md-6">
+                            <label for="IdPuesto">Puesto</label>
+                            <select name="IdPuesto" id="IdPuesto" asp-items="ViewBag.Puestos" class="form-control">
+                                <option value="">-- Seleccione un puesto --</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="IdDepartamento">Departamento</label>
+                            <select name="IdDepartamento" id="IdDepartamento" asp-items="ViewBag.Departamentos" class="form-control">
+                                <option value="">-- Seleccione un departamento --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row mt-3">
+                        <div class="form-group col-md-6">
+                            <label for="IdFrente">Frente</label>
+                            <select name="IdFrente" id="IdFrente" asp-items="ViewBag.Frentes" class="form-control">
+                                <option value="">-- Seleccione un frente --</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="IdEstatusPersonal">Estatus</label>
+                            <select name="IdEstatusPersonal" id="IdEstatusPersonal" asp-items="ViewBag.Estatuses" class="form-control">
+                                <option value="">-- Seleccione estatus --</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group mt-3">
+                        <div class="form-check">
+                            <input type="hidden" name="TieneLicenciaManejo" value="false" />
+                            <input type="checkbox" class="form-check-input" id="TieneLicenciaManejo"
+                                   name="TieneLicenciaManejo" value="true" />
+                            <label class="form-check-label" for="TieneLicenciaManejo">
+                                ¿Tiene licencia de manejo?
+                            </label>
+                        </div>
+
+                    </div>
+                    <div id="grpLicencia" class="border rounded p-3" style="display:none;">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="VigenciaLicencia">Vigencia</label>
+                                <input type="date" id="VigenciaLicencia" name="VigenciaLicencia" class="form-control" />
+                                <span class="text-danger field-validation-valid" data-valmsg-for="VigenciaLicencia" data-valmsg-replace="true"></span>
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="ArchivoLicencia">Archivo de licencia (PDF/JPG)</label>
+                                <input type="file" id="ArchivoLicencia" name="ArchivoLicencia" class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
+                                <span class="text-danger field-validation-valid" data-valmsg-for="ArchivoLicencia" data-valmsg-replace="true"></span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="editarPersonalModal" tabindex="-1" role="dialog" aria-labelledby="editarPersonalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="editarPersonalLabel">Editar personal</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <form id="formEditarPersonal" method="post" enctype="multipart/form-data">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" id="edit_IdPersonal" name="id" />
+
+                    <div class="form-group">
+                        <label for="edit_Nombre">Nombre</label>
+                        <input type="text" id="edit_Nombre" name="Nombre" class="form-control" />
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="edit_IdPuesto">Puesto</label>
+                        <select id="edit_IdPuesto" name="IdPuesto" class="form-control"></select>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="edit_IdDepartamento">Departamento</label>
+                        <select id="edit_IdDepartamento" name="IdDepartamento" class="form-control"></select>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="edit_IdFrente">Frente</label>
+                        <select id="edit_IdFrente" name="IdFrente" class="form-control"></select>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <label for="edit_IdEstatusPersonal">Estatus</label>
+                        <select id="edit_IdEstatusPersonal" name="IdEstatusPersonal" class="form-control"></select>
+                    </div>
+
+                    <div class="form-group mt-3">
+                        <div class="form-check">
+                            <input type="hidden" name="TieneLicenciaManejo" value="false" />
+                            <input type="checkbox" class="form-check-input" id="edit_TieneLicenciaManejo"
+                                   name="TieneLicenciaManejo" value="true" />
+                            <label class="form-check-label" for="edit_TieneLicenciaManejo">
+                                ¿Tiene licencia de manejo?
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="edit_grpLicencia" class="border rounded p-3" style="display:none;">
+                        <div class="form-row">
+                            <div class="form-group col-md-6">
+                                <label for="edit_VigenciaLicencia">Vigencia</label>
+                                <input type="date" id="edit_VigenciaLicencia" name="VigenciaLicencia" class="form-control" />
+                            </div>
+                            <div class="form-group col-md-6">
+                                <label for="edit_ArchivoLicencia">Archivo de licencia (PDF/JPG)</label>
+                                <input type="file" id="edit_ArchivoLicencia" name="ArchivoLicencia" class="form-control" accept=".pdf,.jpg,.jpeg,.png" />
+                                <div id="archivoActual" class="mt-2"></div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div class="form-group mt-3 text-end">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-save"></i> Guardar cambios
+                        </button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times"></i> Cancelar
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="detallesPersonalModal" tabindex="-1" role="dialog" aria-labelledby="detallesPersonalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title" id="detallesPersonalLabel">Detalles del personal</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <dl class="row">
+                    <dt class="col-sm-3">Nombre</dt>
+                    <dd class="col-sm-9" id="detPerNombre"></dd>
+
+                    <dt class="col-sm-3">Puesto</dt>
+                    <dd class="col-sm-9" id="detPerPuesto"></dd>
+
+                    <dt class="col-sm-3">Departamento</dt>
+                    <dd class="col-sm-9" id="detPerDepartamento"></dd>
+
+                    <dt class="col-sm-3">Frente</dt>
+                    <dd class="col-sm-9" id="detPerFrente"></dd>
+
+                    <dt class="col-sm-3">Estatus</dt>
+                    <dd class="col-sm-9" id="detPerEstatus"></dd>
+
+                    <dt class="col-sm-3">Licencia</dt>
+                    <dd class="col-sm-9" id="detPerLicencia"></dd>
+
+                    <dt class="col-sm-3">Vigencia</dt>
+                    <dd class="col-sm-9" id="detPerVigencia"></dd>
+
+                </dl>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    <i class="fas fa-times"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+    <script>
+                function fillSelect($sel, items, valueKey, textKey, selectedValue) {
+            $sel.empty().append('<option value="">-- Seleccione --</option>');
+            $.each(items, function (_, it) {
+                var val = it[valueKey], txt = it[textKey];
+                var sel = (val === selectedValue) ? 'selected' : '';
+                $sel.append('<option value="' + val + '" ' + sel + '>' + txt + '</option>');
+            });
+        }
+
+          $(function () {
+          $('#formCrearPersonal').on('submit', function (e) {
+            e.preventDefault();
+
+            var form = $(this)[0];
+            var formData = new FormData(form);
+
+            if ($('#TieneLicenciaManejo').is(':checked')) {
+              formData.set("TieneLicenciaManejo", "true");
+            } else {
+              formData.set("TieneLicenciaManejo", "false");
+            }
+
+            $.ajax({
+              type: $(this).attr('method'),
+              url: $(this).attr('action'),
+              data: formData,
+              processData: false,
+              contentType: false,
+              success: function () {
+                $('#crearPersonalModal').modal('hide');
+                location.reload();
+              },
+              error: function (xhr) {
+                alert(xhr.responseText || "Error al crear el registro.");
+              }
+            });
+          });
+        });
+                function abrirEditarPersonal(id) {
+            $.ajax({
+                url: '/Personales/Edit/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#edit_IdPersonal').val(data.idPersonal);
+                    $('#edit_Nombre').val(data.nombre || '');
+
+                    fillSelect($('#edit_IdPuesto'), data.puestos, 'idPuesto', 'nombre', data.idPuesto);
+                    fillSelect($('#edit_IdDepartamento'), data.departamentos, 'idDepartamento', 'nombre', data.idDepartamento);
+                    fillSelect($('#edit_IdFrente'), data.frentes, 'idFrente', 'nombre', data.idFrente);
+                    fillSelect($('#edit_IdEstatusPersonal'), data.estatuses, 'idEstatusPersonal', 'nombre', data.idEstatusPersonal);
+
+                    if (data.tieneLicenciaManejo) {
+                        $('#edit_TieneLicenciaManejo').prop('checked', true).trigger('change');
+                        $('#edit_VigenciaLicencia').val(data.vigenciaLicencia ? data.vigenciaLicencia.split('T')[0] : '');
+
+                        if (data.archivoLicencia) {
+                            let cleanUrl = data.archivoLicencia.split('?')[0];
+                            let ext = cleanUrl.split('.').pop().toLowerCase();
+
+                            if (ext === "jpg" || ext === "jpeg" || ext === "png") {
+                                $('#archivoActual').html(
+                                    '<a href="' + data.archivoLicencia + '" target="_blank">' +
+                                        '<img src="' + data.archivoLicencia + '" class="img-thumbnail mt-2" style="max-height:120px;">' +
+                                    '</a>'
+                                );
+                            } else {
+                                $('#archivoActual').html(
+                                    '<a href="' + data.archivoLicencia + '" target="_blank" class="btn btn-link mt-2">Ver archivo actual</a>'
+                                );
+                            }
+                        } else {
+                            $('#archivoActual').html('<span class="text-muted">No hay archivo registrado</span>');
+                        }
+                    } else {
+                        $('#edit_TieneLicenciaManejo').prop('checked', false).trigger('change');
+                        $('#archivoActual').html('<span class="text-muted">No hay archivo registrado</span>');
+                    }
+
+                    $('#editarPersonalModal').modal('show');
+                },
+                error: function () {
+                    alert("No se pudieron cargar los datos del personal.");
+                }
+            });
+        }
+
+
+                $('#formEditarPersonal').on('submit', function (e) {
+            e.preventDefault();
+
+            var form = $(this)[0];
+            var formData = new FormData(form);
+            var id = $('#edit_IdPersonal').val();
+
+            if ($('#edit_TieneLicenciaManejo').is(':checked')) {
+                formData.set("TieneLicenciaManejo", "true");
+            } else {
+                formData.set("TieneLicenciaManejo", "false");
+            }
+
+            $.ajax({
+                url: '/Personales/EditPost/' + id,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function () {
+                    $('#editarPersonalModal').modal('hide');
+                    location.reload();
+                },
+                error: function (xhr) {
+                    alert(xhr.responseText || "No se pudo actualizar el registro.");
+                }
+            });
+        });
+
+                function abrirDetallesPersonal(id) {
+            $.ajax({
+                url: '/Personales/DetailsJson/' + id,
+                type: 'GET',
+                success: function (data) {
+                    $('#detPerNombre').text(data.nombre || '');
+                    $('#detPerPuesto').text(data.puesto || '');
+                    $('#detPerDepartamento').text(data.departamento || '');
+                    $('#detPerFrente').text(data.frente || '');
+                    $('#detPerEstatus').text(data.estatus || '');
+
+                    if (data.tieneLicenciaManejo) {
+                        $('#detPerVigencia').text(
+                            data.vigenciaLicencia
+                                ? new Date(data.vigenciaLicencia).toLocaleDateString()
+                                : 'Sin fecha'
+                        );
+
+                        if (data.tieneArchivo) {
+                                    $.get('/Personales/VerLicencia/' + id, function (res) {
+            let url = res.url;
+            let cleanUrl = url.split('?')[0];
+            let ext = cleanUrl.split('.').pop().toLowerCase();
+
+            if (ext === "jpg" || ext === "jpeg" || ext === "png") {
+                $('#detPerLicencia').html(
+                    '<a href="' + url + '" target="_blank">' +
+                        '<img src="' + url + '" class="img-thumbnail mt-2" style="max-height:150px;">' +
+                    '</a>'
+                );
+            } else {
+                $('#detPerLicencia').html(
+                    '<a href="' + url + '" target="_blank" class="btn btn-link">Ver archivo</a>'
+                );
+            }
+        });
+
+                        } else {
+                            $('#detPerLicencia').html('<span class="text-muted">No hay archivo cargado</span>');
+                        }
+                    } else {
+                        $('#detPerLicencia').html('<span class="text-muted">No tiene licencia</span>');
+                        $('#detPerVigencia').text('-');
+                    }
+
+                    $('#detallesPersonalModal').modal('show');
+                },
+                error: function () {
+                    alert("No se pudieron cargar los detalles del personal.");
+                }
+            });
+        }
+
+
+         $(function () {
+            $('#TieneLicenciaManejo').on('change', function () {
+                if ($(this).is(':checked')) {
+                    $('#grpLicencia').slideDown();
+                } else {
+                    $('#grpLicencia').slideUp();
+                    $('#VigenciaLicencia').val('');
+                    $('#ArchivoLicencia').val('');
+                }
+            });
+        });
+
+                       $(function () {
+            $('#edit_TieneLicenciaManejo').on('change', function () {
+                if ($(this).is(':checked')) {
+                    $('#edit_grpLicencia').slideDown();
+                } else {
+                    $('#edit_grpLicencia').slideUp();
+                    $('#edit_VigenciaLicencia').val('');
+                    $('#edit_ArchivoLicencia').val('');
+                }
+            });
+        });
+
+    </script>
+}
