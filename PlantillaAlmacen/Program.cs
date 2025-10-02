@@ -14,10 +14,17 @@ var builder = WebApplication.CreateBuilder(args);
 QuestPDF.Settings.License = LicenseType.Community;
 
 
-FirebaseApp.Create(new AppOptions()
+var firebaseConfig = Environment.GetEnvironmentVariable("FIREBASE_CONFIG");
+
+if (!string.IsNullOrEmpty(firebaseConfig))
 {
-    Credential = GoogleCredential.FromFile("App_Data/firebase-adminsdk.json")
-});
+    var credential = GoogleCredential.FromJson(firebaseConfig);
+    FirebaseApp.Create(new AppOptions()
+    {
+        Credential = credential
+    });
+}
+
 
 builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AlmacenDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
