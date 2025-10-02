@@ -23,6 +23,9 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDbContext<AlmacenDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 builder.Services.Configure<SecurityOptions>(builder.Configuration.GetSection("Security"));
 builder.Services.AddSingleton<IPasswordHasherService, PasswordHasherService>();
+builder.Services.AddDbContext<AlmacenDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
                 .AddCookie(opt =>
